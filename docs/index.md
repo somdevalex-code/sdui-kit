@@ -15,6 +15,9 @@ Start with [Getting Started](./guide/getting-started.md).
 - Learn the payload shape in [Protocol](./guide/protocol.md).
 - Register app components with [Component Registry](./guide/registry.md).
 - Agree with backend on [Backend Contract](./guide/backend-contract.md).
+- Load remote screens with [Navigation & Screens](./guide/navigation-screens.md).
+- Connect stores and query clients with [Data & Cache Adapters](./guide/data-cache-adapters.md).
+- Wire router/query libraries through [Integrations](./integrations/tanstack-query.md).
 - Build real screens with [Layouts & Cards](./recipes/layouts.md).
 - Add form workflows with [Dynamic Forms](./recipes/forms.md).
 - Run the reference app in [React Basic](./examples/react-basic.md).

@@ -7,10 +7,17 @@ import {
   MaybePromise,
   RuntimeContext,
   SDUINode,
+  HttpMethod,
   isRecord,
 } from './types'
-
-export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+import {
+  CacheAdapter,
+  DataAdapter,
+  DataRequest,
+  NavigationAdapter,
+  normalizeInvalidationTags,
+} from './adapters'
+import { ScreenStoreAdapter } from './screen'
 
 export interface ConfirmConfig {
   title: string
@@ -37,6 +44,8 @@ export interface NavigateAction extends ActionBase {
   type: 'navigate'
   to: string
   query?: Record<string, unknown>
+  replace?: boolean
+  state?: Record<string, unknown>
 }
 
 export interface GoBackAction extends ActionBase {
@@ -130,10 +139,6 @@ export type ActionHandler<TAction extends SDUIAction = SDUIAction> = (
   runner: ActionRunner,
 ) => MaybePromise<unknown>
 
-export interface CacheAdapter {
-  invalidate(tags: unknown, context: RuntimeContext): MaybePromise<void>
-}
-
 export interface ModalAdapter {
   open(action: OpenModalAction, context: RuntimeContext): MaybePromise<void>
   close(action: CloseModalAction, context: RuntimeContext): MaybePromise<void>
@@ -145,6 +150,10 @@ export interface DrawerAdapter {
 }
 
 export interface ActionAdapters {
+  data?: DataAdapter
+  cache?: CacheAdapter
+  navigation?: NavigationAdapter<NavigateAction>
+  screen?: ScreenStoreAdapter
   request?: (
     request: ResolvedRequest,
     context: RuntimeContext,
@@ -159,7 +168,6 @@ export interface ActionAdapters {
   ) => MaybePromise<void>
   modal?: ModalAdapter
   drawer?: DrawerAdapter
-  cache?: CacheAdapter
   confirm?: (config: ConfirmConfig, context: RuntimeContext) => MaybePromise<boolean>
   custom?: Record<string, ActionHandler>
   onUnhandledAction?: ActionHandler
@@ -258,26 +266,29 @@ export class ActionRunner {
     action: RequestAction,
     context: RuntimeContext,
   ): Promise<unknown> {
-    if (!this.adapters.request) {
+    if (!this.adapters.data && !this.adapters.request) {
       throw new Error('A request adapter is required to run request actions')
     }
 
-    const request: ResolvedRequest = {
+    const request: ResolvedRequest & DataRequest = {
       endpoint: action.endpoint,
       method: action.method ?? 'POST',
       headers: resolveObject(action.headers, context),
       params: resolveValue(action.params, context),
       body: resolveValue(action.body ?? action.payload ?? {}, context),
+      signal: getAbortSignal(context),
       action,
     }
 
     try {
-      const response = await this.adapters.request(request, context)
+      const response = this.adapters.data
+        ? await this.adapters.data.request(request, context)
+        : await this.adapters.request?.(request, context)
       const responseContext = { ...context, response }
 
       if (action.invalidate !== undefined) {
         await this.adapters.cache?.invalidate(
-          resolveValue(action.invalidate, responseContext),
+          normalizeInvalidationTags(resolveValue(action.invalidate, responseContext)),
           responseContext,
         )
       }
@@ -313,10 +324,22 @@ export class ActionRunner {
       case 'toast':
         return this.adapters.toast?.(action, context)
       case 'navigate':
+        if (this.adapters.navigation) {
+          return this.adapters.navigation.navigate(action, context)
+        }
+
         return this.adapters.navigate?.(action, context)
       case 'goBack':
+        if (this.adapters.navigation) {
+          return this.adapters.navigation.goBack(context)
+        }
+
         return this.adapters.goBack?.(action, context)
       case 'refreshScreen':
+        if (this.adapters.screen) {
+          return this.adapters.screen.refresh(context)
+        }
+
         return this.adapters.refreshScreen?.(action, context)
       case 'openModal':
         return this.adapters.modal?.open(action, context)
@@ -382,4 +405,10 @@ function resolveObject(
 ): Record<string, unknown> | undefined {
   const resolved = resolveValue(value, context)
   return isRecord(resolved) ? resolved : undefined
+}
+
+function getAbortSignal(context: RuntimeContext): AbortSignal | undefined {
+  return typeof AbortSignal !== 'undefined' && context.signal instanceof AbortSignal
+    ? context.signal
+    : undefined
 }

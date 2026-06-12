@@ -1,6 +1,6 @@
 # Adapters
 
-Core has no opinion about networking, routing, notifications or modal systems. Connect those through `ActionRunner` adapters.
+Core has no opinion about networking, routing, stores, notifications or modal systems. Connect those through small adapters owned by the app or by integration packages.
 
 ```ts
 const actionRunner = new ActionRunner({
@@ -21,6 +21,12 @@ const actionRunner = new ActionRunner({
   confirm: (config) => confirmDialog.open(config),
 })
 ```
+
+For larger apps, split adapters by concern:
+
+- [Navigation & Screens](./navigation-screens.md) for route context and screen loading.
+- [Data & Cache Adapters](./data-cache-adapters.md) for requests, invalidation and screen stores.
+- [TanStack Query](../integrations/tanstack-query.md), [React Router](../integrations/react-router.md), [Browser History](../integrations/browser-history.md) and [RTK Query](../integrations/rtk-query.md) for integration patterns.
 
 To support another framework, implement a renderer that:
 

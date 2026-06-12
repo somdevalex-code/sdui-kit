@@ -1,9 +1,15 @@
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
-import { ActionRunner } from '@sdui-kit/core'
+import { describe, expect, it, vi } from 'vitest'
+import { ActionRunner, type ScreenStoreAdapter } from '@sdui-kit/core'
 
-import { SDUIProvider, SDUIRenderer, createReactRegistry } from '../src'
+import {
+  SDUIProvider,
+  SDUIRenderer,
+  SDUIScreenProvider,
+  SDUIScreenRenderer,
+  createReactRegistry,
+} from '../src'
 
 describe('@sdui-kit/react', () => {
   it('supports JavaScript shorthand component maps', () => {
@@ -132,4 +138,127 @@ describe('@sdui-kit/react', () => {
     expect(html).toContain('<section>')
     expect(html).toContain('Hello SDUI')
   })
+
+  it('renders loaded screens through the screen renderer', () => {
+    const registry = createReactRegistry({
+      Text: ({ children }) => React.createElement('p', null, children),
+    })
+    const store = createStaticScreenStore({
+      status: 'success',
+      route: { path: '/applications' },
+      response: {
+        schemaVersion: '1.0',
+        node: {
+          componentName: 'Text',
+          props: { children: 'Remote screen' },
+        },
+      },
+    })
+
+    const html = renderToStaticMarkup(
+      <SDUIScreenProvider
+        registry={registry}
+        actionRunner={new ActionRunner()}
+        screenStore={store}
+      >
+        <SDUIScreenRenderer />
+      </SDUIScreenProvider>,
+    )
+
+    expect(html).toContain('Remote screen')
+  })
+
+  it('renders screen loading and error fallbacks', () => {
+    const registry = createReactRegistry({})
+    const loading = renderToStaticMarkup(
+      <SDUIScreenProvider
+        registry={registry}
+        actionRunner={new ActionRunner()}
+        screenStore={createStaticScreenStore({
+          status: 'loading',
+          route: { path: '/loading' },
+        })}
+      >
+        <SDUIScreenRenderer loadingFallback="Loading..." />
+      </SDUIScreenProvider>,
+    )
+    const error = renderToStaticMarkup(
+      <SDUIScreenProvider
+        registry={registry}
+        actionRunner={new ActionRunner()}
+        screenStore={createStaticScreenStore({
+          status: 'error',
+          route: { path: '/error' },
+          error: new Error('No screen'),
+        })}
+      >
+        <SDUIScreenRenderer errorFallback={(state) => `Failed ${state.route.path}`} />
+      </SDUIScreenProvider>,
+    )
+
+    expect(loading).toContain('Loading...')
+    expect(error).toContain('Failed /error')
+  })
+
+  it('passes screen route and data into action context', async () => {
+    let buttonProps: Record<string, unknown> = {}
+    const custom = vi.fn()
+    const registry = createReactRegistry({
+      Button: (props: Record<string, unknown>) => {
+        buttonProps = props
+        return React.createElement('button', null, props.children as React.ReactNode)
+      },
+    })
+    const store = createStaticScreenStore({
+      status: 'success',
+      route: { path: '/applications/101' },
+      response: {
+        schemaVersion: '1.0',
+        data: { applicationId: '101' },
+        node: {
+          componentName: 'Button',
+          props: {
+            children: 'Inspect',
+            action: { type: 'inspect' },
+          },
+        },
+      },
+    })
+
+    renderToStaticMarkup(
+      <SDUIScreenProvider
+        registry={registry}
+        actionRunner={new ActionRunner({ custom: { inspect: custom } })}
+        screenStore={store}
+      >
+        <SDUIScreenRenderer />
+      </SDUIScreenProvider>,
+    )
+
+    await (buttonProps.onClick as () => Promise<unknown>)()
+
+    expect(custom).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'inspect' }),
+      expect.objectContaining({
+        route: { path: '/applications/101' },
+        data: { applicationId: '101' },
+      }),
+      expect.any(ActionRunner),
+    )
+  })
 })
+
+function createStaticScreenStore(
+  state: ReturnType<ScreenStoreAdapter['getState']>,
+): ScreenStoreAdapter {
+  return {
+    getState: () => state,
+    subscribe: (listener) => {
+      listener(state)
+      return () => undefined
+    },
+    load: async () => state,
+    refresh: async () => state,
+    setRoute: async () => state,
+  }
+}

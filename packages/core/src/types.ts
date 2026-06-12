@@ -8,6 +8,15 @@ export type JsonValue = JsonPrimitive | JsonObject | JsonValue[]
 
 export type MaybePromise<T> = T | Promise<T>
 
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+
+export type InvalidationTag =
+  | string
+  | {
+      type: string
+      id?: string | number
+    }
+
 export type SDUIChildren =
   | string
   | number

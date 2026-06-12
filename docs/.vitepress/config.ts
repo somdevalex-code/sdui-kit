@@ -11,6 +11,8 @@ export default defineConfig({
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'Protocol', link: '/guide/protocol' },
+      { text: 'Runtime', link: '/guide/navigation-screens' },
+      { text: 'Integrations', link: '/integrations/tanstack-query' },
       { text: 'Recipes', link: '/recipes/layouts' },
       { text: 'Examples', link: '/examples/react-basic' },
     ],
@@ -30,7 +32,19 @@ export default defineConfig({
           { text: 'Actions', link: '/guide/actions' },
           { text: 'Expressions', link: '/guide/expressions' },
           { text: 'Forms', link: '/guide/forms' },
+          { text: 'Navigation & Screens', link: '/guide/navigation-screens' },
+          { text: 'Data & Cache Adapters', link: '/guide/data-cache-adapters' },
           { text: 'Adapters', link: '/guide/adapters' },
+        ],
+      },
+      {
+        text: 'Integrations',
+        items: [
+          { text: 'TanStack Query', link: '/integrations/tanstack-query' },
+          { text: 'React Router', link: '/integrations/react-router' },
+          { text: 'Next App Router', link: '/integrations/next' },
+          { text: 'Browser History', link: '/integrations/browser-history' },
+          { text: 'RTK Query Pattern', link: '/integrations/rtk-query' },
         ],
       },
       {
