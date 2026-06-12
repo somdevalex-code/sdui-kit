@@ -9,3 +9,12 @@ pnpm add @sdui-kit/core @sdui-kit/react
 ```
 
 Start with [Getting Started](./guide/getting-started.md).
+
+## Common Paths
+
+- Learn the payload shape in [Protocol](./guide/protocol.md).
+- Register app components with [Component Registry](./guide/registry.md).
+- Agree with backend on [Backend Contract](./guide/backend-contract.md).
+- Build real screens with [Layouts & Cards](./recipes/layouts.md).
+- Add form workflows with [Dynamic Forms](./recipes/forms.md).
+- Run the reference app in [React Basic](./examples/react-basic.md).
