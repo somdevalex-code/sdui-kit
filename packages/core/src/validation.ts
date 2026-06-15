@@ -4,7 +4,6 @@ import {
   ValidationIssue,
   ValidationResult,
   isRecord,
-  isSDUINode,
 } from './types'
 import {
   SDUIRouteManifest,
@@ -372,24 +371,33 @@ function validateNodeOrNodeArray(
   input: unknown,
   path: string,
   issues: ValidationIssue[],
+  seen: WeakSet<Record<string, unknown>> = new WeakSet(),
 ): void {
   if (Array.isArray(input)) {
-    input.forEach((node, index) => validateNode(node, `${path}[${index}]`, issues))
+    input.forEach((node, index) =>
+      validateNode(node, `${path}[${index}]`, issues, seen),
+    )
     return
   }
 
-  validateNode(input, path, issues)
+  validateNode(input, path, issues, seen)
 }
 
 function validateNode(
   input: unknown,
   path: string,
   issues: ValidationIssue[],
+  seen: WeakSet<Record<string, unknown>> = new WeakSet(),
 ): void {
   if (!isRecord(input)) {
     issues.push({ path, message: 'Node must be an object' })
     return
   }
+
+  if (seen.has(input)) {
+    return
+  }
+  seen.add(input)
 
   if (typeof input.componentName !== 'string' || !input.componentName.trim()) {
     issues.push({
@@ -414,19 +422,32 @@ function validateNode(
   }
 
   if ('children' in input) {
-    validateChildren(input.children as SDUIChildren, `${path}.children`, issues)
+    validateChildren(input.children as SDUIChildren, `${path}.children`, issues, seen)
   }
 
-  if (isRecord(input.props) && 'children' in input.props) {
+  const props = isRecord(input.props) ? input.props : undefined
+
+  if (props && 'children' in props) {
     validateChildren(
-      input.props.children as SDUIChildren,
+      props.children as SDUIChildren,
       `${path}.props.children`,
       issues,
+      seen,
     )
   }
 
-  if (isRecord(input.props) && 'action' in input.props) {
-    validateAction(input.props.action, `${path}.props.action`, issues)
+  if (props && 'action' in props) {
+    validateAction(props.action, `${path}.props.action`, issues, seen)
+  }
+
+  if (props) {
+    Object.entries(props).forEach(([key, value]) => {
+      if (key === 'children' || key === 'action') {
+        return
+      }
+
+      validateNestedNodes(value, `${path}.props.${key}`, issues, seen)
+    })
   }
 }
 
@@ -434,6 +455,7 @@ function validateChildren(
   children: SDUIChildren | undefined,
   path: string,
   issues: ValidationIssue[],
+  seen: WeakSet<Record<string, unknown>>,
 ): void {
   if (
     children == null ||
@@ -446,23 +468,61 @@ function validateChildren(
 
   if (Array.isArray(children)) {
     children.forEach((child, index) => {
-      validateNode(child, `${path}[${index}]`, issues)
+      validateNode(child, `${path}[${index}]`, issues, seen)
     })
     return
   }
 
-  validateNode(children, path, issues)
+  validateNode(children, path, issues, seen)
+}
+
+function validateNestedNodes(
+  input: unknown,
+  path: string,
+  issues: ValidationIssue[],
+  seen: WeakSet<Record<string, unknown>>,
+): void {
+  if (Array.isArray(input)) {
+    input.forEach((item, index) => {
+      validateNestedNodes(item, `${path}[${index}]`, issues, seen)
+    })
+    return
+  }
+
+  if (!isRecord(input)) {
+    return
+  }
+
+  if (isPotentialSDUINode(input)) {
+    validateNode(input, path, issues, seen)
+    return
+  }
+
+  if (seen.has(input)) {
+    return
+  }
+  seen.add(input)
+
+  Object.entries(input).forEach(([key, value]) => {
+    validateNestedNodes(value, `${path}.${key}`, issues, seen)
+  })
 }
 
 function validateAction(
   action: unknown,
   path: string,
   issues: ValidationIssue[],
+  seen: WeakSet<Record<string, unknown>> = new WeakSet(),
 ): void {
   if (!isRecord(action)) {
     issues.push({ path, message: 'action must be an object' })
     return
   }
+
+  if (seen.has(action)) {
+    return
+  }
+  seen.add(action)
 
   if (typeof action.type !== 'string' || !action.type.trim()) {
     issues.push({ path: `${path}.type`, message: 'type is required' })
@@ -470,7 +530,7 @@ function validateAction(
 
   if (
     (action.type === 'request' || action.type === 'REQUEST') &&
-    typeof action.endpoint !== 'string'
+    (typeof action.endpoint !== 'string' || !action.endpoint.trim())
   ) {
     issues.push({
       path: `${path}.endpoint`,
@@ -478,21 +538,64 @@ function validateAction(
     })
   }
 
-  if (
-    (action.type === 'sequence' || action.type === 'uiSequence') &&
-    !Array.isArray(action.actions)
-  ) {
-    issues.push({
-      path: `${path}.actions`,
-      message: 'actions must be an array for sequence actions',
+  if (action.type === 'request' || action.type === 'REQUEST') {
+    ;(['success', 'successUi', 'error', 'errorUi'] as const).forEach((key) => {
+      if (key in action && action[key] !== undefined) {
+        validateAction(action[key], `${path}.${key}`, issues, seen)
+      }
     })
   }
 
-  if (action.type === 'UI_ONLY' && !isRecord(action.ui)) {
-    issues.push({
-      path: `${path}.ui`,
-      message: 'ui is required for UI_ONLY actions',
-    })
+  if (action.type === 'sequence' || action.type === 'uiSequence') {
+    if (!Array.isArray(action.actions)) {
+      issues.push({
+        path: `${path}.actions`,
+        message: 'actions must be an array for sequence actions',
+      })
+    } else {
+      action.actions.forEach((childAction, index) => {
+        validateAction(childAction, `${path}.actions[${index}]`, issues, seen)
+      })
+    }
+  }
+
+  if (action.type === 'UI_ONLY') {
+    if (!isRecord(action.ui)) {
+      issues.push({
+        path: `${path}.ui`,
+        message: 'ui is required for UI_ONLY actions',
+      })
+    } else {
+      validateAction(action.ui, `${path}.ui`, issues, seen)
+    }
+  }
+
+  if (action.type === 'toast') {
+    validateNonEmptyString(action.message, `${path}.message`, 'message', issues)
+  }
+
+  if (action.type === 'navigate') {
+    validateNonEmptyString(action.to, `${path}.to`, 'to', issues)
+  }
+
+  if (action.type === 'drawerOpen') {
+    validateNonEmptyString(
+      action.drawerId,
+      `${path}.drawerId`,
+      'drawerId',
+      issues,
+    )
+  }
+
+  if (action.type === 'openModal') {
+    if (!('children' in action) || action.children === undefined) {
+      issues.push({
+        path: `${path}.children`,
+        message: 'children is required for openModal actions',
+      })
+    } else {
+      validateNodeOrNodeArray(action.children, `${path}.children`, issues, seen)
+    }
   }
 }
 
@@ -501,28 +604,108 @@ export function collectUnknownComponents(
   isKnown: (componentName: string) => boolean,
 ): string[] {
   const unknown = new Set<string>()
-  const visit = (current: SDUINode): void => {
-    if (!isKnown(current.componentName)) {
+  const seen = new WeakSet<Record<string, unknown>>()
+
+  const visit = (current: Record<string, unknown>): void => {
+    if (seen.has(current)) {
+      return
+    }
+    seen.add(current)
+
+    if (
+      typeof current.componentName === 'string' &&
+      current.componentName.trim() &&
+      !isKnown(current.componentName)
+    ) {
       unknown.add(current.componentName)
     }
 
-    const children = current.props?.children ?? current.children
+    if ('children' in current) {
+      visitNestedComponentNodes(current.children)
+    }
 
-    if (Array.isArray(children)) {
-      children.filter(isSDUINode).forEach(visit)
+    if (isRecord(current.props)) {
+      Object.entries(current.props).forEach(([key, value]) => {
+        if (key === 'action') {
+          visitActionComponentNodes(value)
+          return
+        }
+
+        visitNestedComponentNodes(value)
+      })
+    }
+  }
+
+  const visitActionComponentNodes = (action: unknown): void => {
+    if (!isRecord(action)) {
       return
     }
 
-    if (isSDUINode(children)) {
-      visit(children)
+    if (seen.has(action)) {
+      return
+    }
+    seen.add(action)
+
+    if (action.type === 'request' || action.type === 'REQUEST') {
+      ;(['success', 'successUi', 'error', 'errorUi'] as const).forEach((key) => {
+        if (key in action && action[key] !== undefined) {
+          visitActionComponentNodes(action[key])
+        }
+      })
+      return
+    }
+
+    if (action.type === 'sequence' || action.type === 'uiSequence') {
+      if (Array.isArray(action.actions)) {
+        action.actions.forEach(visitActionComponentNodes)
+      }
+      return
+    }
+
+    if (action.type === 'UI_ONLY') {
+      visitActionComponentNodes(action.ui)
+      return
+    }
+
+    if (action.type === 'openModal') {
+      visitNestedComponentNodes(action.children)
     }
   }
 
+  const visitNestedComponentNodes = (input: unknown): void => {
+    if (Array.isArray(input)) {
+      input.forEach(visitNestedComponentNodes)
+      return
+    }
+
+    if (!isRecord(input)) {
+      return
+    }
+
+    if (isPotentialSDUINode(input)) {
+      visit(input)
+      return
+    }
+
+    if (seen.has(input)) {
+      return
+    }
+    seen.add(input)
+
+    Object.values(input).forEach(visitNestedComponentNodes)
+  }
+
   if (Array.isArray(node)) {
-    node.forEach(visit)
+    node.forEach(visitNestedComponentNodes)
   } else {
-    visit(node)
+    visitNestedComponentNodes(node)
   }
 
   return [...unknown]
+}
+
+function isPotentialSDUINode(
+  input: Record<string, unknown>,
+): input is Record<string, unknown> & { componentName?: unknown } {
+  return 'componentName' in input
 }

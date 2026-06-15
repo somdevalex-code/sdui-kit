@@ -125,6 +125,7 @@ export class ScreenStore implements ScreenStoreAdapter {
   private readonly listeners = new Set<ScreenListener>()
   private state: ScreenState
   private abortController?: AbortController
+  private loadId = 0
 
   constructor(options: ScreenStoreOptions) {
     this.loader = options.loader
@@ -172,8 +173,12 @@ export class ScreenStore implements ScreenStoreAdapter {
     forceRefresh: boolean,
   ): Promise<ScreenState> {
     this.abortController?.abort()
-    this.abortController =
+    const loadId = this.loadId + 1
+    this.loadId = loadId
+
+    const abortController =
       typeof AbortController !== 'undefined' ? new AbortController() : undefined
+    this.abortController = abortController
 
     const routeCopy = copyRoute(route)
     const status: ScreenStatus =
@@ -191,16 +196,24 @@ export class ScreenStore implements ScreenStoreAdapter {
         {
           route: routeCopy,
           screenId: routeCopy.screenId,
-          signal: this.abortController?.signal,
+          signal: abortController?.signal,
         },
         context,
       )
+
+      if (this.isStaleLoad(loadId)) {
+        return this.getState()
+      }
 
       if (response.cache?.key && this.cache) {
         await this.cache.set(response.cache.key, response, {
           ttlMs: response.cache.ttlMs,
           tags: response.cache.tags,
         })
+      }
+
+      if (this.isStaleLoad(loadId)) {
+        return this.getState()
       }
 
       this.setState({
@@ -212,6 +225,10 @@ export class ScreenStore implements ScreenStoreAdapter {
 
       return this.getState()
     } catch (error) {
+      if (this.isStaleLoad(loadId)) {
+        return this.getState()
+      }
+
       this.setState({
         ...this.state,
         status: 'error',
@@ -220,7 +237,15 @@ export class ScreenStore implements ScreenStoreAdapter {
       })
 
       return this.getState()
+    } finally {
+      if (!this.isStaleLoad(loadId) && this.abortController === abortController) {
+        this.abortController = undefined
+      }
     }
+  }
+
+  private isStaleLoad(loadId: number): boolean {
+    return loadId !== this.loadId
   }
 
   private setState(state: ScreenState): void {

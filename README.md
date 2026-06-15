@@ -2,7 +2,7 @@
 
 Framework-agnostic Server-Driven UI runtime with adapters for UI frameworks.
 
-This workspace contains an MVP package split:
+This workspace contains these packages:
 
 - `@sdui-kit/core` - protocol types, component registry, expressions, action runner and payload validation.
 - `@sdui-kit/react` - React provider, renderer and registry helpers.
@@ -32,10 +32,21 @@ const registry = createReactRegistry({
   button: Button,
 })
 
+const appToast = {
+  show(input: { title?: string; message: string; tone: string }) {
+    // Render through your app's notification system.
+  },
+}
+
 const actionRunner = new ActionRunner({
   request: ({ endpoint, method, body, params }) =>
     api.request({ url: endpoint, method, data: body, params }),
-  toast: (action) => console.log(action.message),
+  toast: (action) =>
+    appToast.show({
+      title: action.title,
+      message: action.message,
+      tone: action.status ?? 'info',
+    }),
 })
 
 const screen = {

@@ -128,6 +128,8 @@ Mutation action:
 
 `ActionRunner` normalizes `invalidate` into cache tags and calls `CacheAdapter.invalidate(tags, context)` when a cache adapter is provided. The adapter decides whether that means clearing an in-memory entry, invalidating TanStack Query keys, dispatching RTK Query invalidations, or doing nothing.
 
+If `CacheAdapter.invalidate` rejects, the request action rejects through the normal `ActionRunner.run(...)` flow and `onError`. The request `error` branch is reserved for failures from the mutation request executor or `DataAdapter.request`.
+
 ## ScreenStore
 
 `ScreenStore` owns the current screen state:

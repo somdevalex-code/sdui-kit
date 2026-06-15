@@ -280,26 +280,12 @@ export class ActionRunner {
       action,
     }
 
+    let response: unknown
+
     try {
-      const response = this.adapters.data
+      response = this.adapters.data
         ? await this.adapters.data.request(request, context)
         : await this.adapters.request?.(request, context)
-      const responseContext = { ...context, response }
-
-      if (action.invalidate !== undefined) {
-        await this.adapters.cache?.invalidate(
-          normalizeInvalidationTags(resolveValue(action.invalidate, responseContext)),
-          responseContext,
-        )
-      }
-
-      const successAction = action.success ?? action.successUi
-
-      if (successAction) {
-        await this.run(successAction, responseContext)
-      }
-
-      return response
     } catch (error) {
       const errorContext = { ...context, error }
       const errorAction = action.error ?? action.errorUi
@@ -310,6 +296,23 @@ export class ActionRunner {
 
       throw error
     }
+
+    const responseContext = { ...context, response }
+
+    if (action.invalidate !== undefined) {
+      await this.adapters.cache?.invalidate(
+        normalizeInvalidationTags(resolveValue(action.invalidate, responseContext)),
+        responseContext,
+      )
+    }
+
+    const successAction = action.success ?? action.successUi
+
+    if (successAction) {
+      await this.run(successAction, responseContext)
+    }
+
+    return response
   }
 
   private async runUI(

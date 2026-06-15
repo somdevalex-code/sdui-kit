@@ -2,10 +2,12 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
   ActionRunner,
+  collectUnknownComponents,
   createRequestAdapter,
   createScreenStore,
   evaluateCondition,
   resolveExpression,
+  type SDUIScreenResponse,
   validateSDUIRouteManifest,
   validateSDUINode,
   validateSDUIScreenResponse,
@@ -187,6 +189,109 @@ describe('@sdui-kit/core', () => {
     expect(request).toHaveBeenCalled()
   })
 
+  it('runs request error actions when the mutation request fails', async () => {
+    const toasts: string[] = []
+    const request = vi.fn(async () => {
+      throw new Error('Request failed')
+    })
+    const runner = new ActionRunner({
+      request,
+      toast: (action) => {
+        toasts.push(action.message)
+      },
+    })
+
+    await expect(
+      runner.run({
+        type: 'request',
+        endpoint: '/api/save',
+        error: {
+          type: 'toast',
+          message: 'Could not save',
+          status: 'error',
+        },
+      }),
+    ).rejects.toThrow('Request failed')
+
+    expect(toasts).toEqual(['Could not save'])
+  })
+
+  it('does not run request error actions when a success action fails', async () => {
+    const toasts: string[] = []
+    const requestAction = {
+      type: 'request' as const,
+      endpoint: '/api/save',
+      success: {
+        type: 'toast' as const,
+        message: 'Saved',
+      },
+      error: {
+        type: 'toast' as const,
+        message: 'Could not save',
+        status: 'error' as const,
+      },
+    }
+    const onError = vi.fn()
+    const runner = new ActionRunner({
+      request: async () => ({ ok: true }),
+      toast: (action) => {
+        if (action.message === 'Saved') {
+          throw new Error('Toast failed')
+        }
+
+        toasts.push(action.message)
+      },
+      onError,
+    })
+
+    await expect(runner.run(requestAction)).rejects.toThrow('Toast failed')
+
+    expect(toasts).toEqual([])
+    expect(onError).toHaveBeenCalledWith(
+      expect.any(Error),
+      requestAction,
+      expect.objectContaining({}),
+    )
+  })
+
+  it('does not run request error actions when invalidation fails', async () => {
+    const toasts: string[] = []
+    const requestAction = {
+      type: 'request' as const,
+      endpoint: '/api/save',
+      invalidate: ['Applications'],
+      error: {
+        type: 'toast' as const,
+        message: 'Could not save',
+        status: 'error' as const,
+      },
+    }
+    const onError = vi.fn()
+    const runner = new ActionRunner({
+      request: async () => ({ ok: true }),
+      cache: {
+        get: vi.fn(),
+        set: vi.fn(),
+        invalidate: vi.fn(async () => {
+          throw new Error('Invalidate failed')
+        }),
+      },
+      toast: (action) => {
+        toasts.push(action.message)
+      },
+      onError,
+    })
+
+    await expect(runner.run(requestAction)).rejects.toThrow('Invalidate failed')
+
+    expect(toasts).toEqual([])
+    expect(onError).toHaveBeenCalledWith(
+      expect.any(Error),
+      requestAction,
+      expect.objectContaining({}),
+    )
+  })
+
   it('loads, refreshes, and reports screen store state', async () => {
     const listener = vi.fn()
     const store = createScreenStore({
@@ -260,6 +365,76 @@ describe('@sdui-kit/core', () => {
     expect(state.error).toBeInstanceOf(Error)
   })
 
+  it('does not let stale screen load responses overwrite newer loads', async () => {
+    const slow = deferred<SDUIScreenResponse>()
+    const fast = deferred<SDUIScreenResponse>()
+    const store = createScreenStore({
+      route: { path: '/initial' },
+      loader: ({ route }) => {
+        return route.path === '/slow' ? slow.promise : fast.promise
+      },
+    })
+
+    const slowLoad = store.load({ path: '/slow' })
+    const fastLoad = store.load({ path: '/fast' })
+
+    fast.resolve({
+      schemaVersion: '1.0',
+      node: { componentName: 'Text', props: { children: 'fast' } },
+    })
+    await expect(fastLoad).resolves.toMatchObject({
+      status: 'success',
+      route: { path: '/fast' },
+    })
+
+    slow.resolve({
+      schemaVersion: '1.0',
+      node: { componentName: 'Text', props: { children: 'slow' } },
+    })
+    await expect(slowLoad).resolves.toMatchObject({
+      status: 'success',
+      route: { path: '/fast' },
+    })
+    expect(store.getState().response?.node).toEqual({
+      componentName: 'Text',
+      props: { children: 'fast' },
+    })
+  })
+
+  it('does not let stale screen load errors overwrite newer successes', async () => {
+    const stale = deferred<SDUIScreenResponse>()
+    const fresh = deferred<SDUIScreenResponse>()
+    const store = createScreenStore({
+      route: { path: '/initial' },
+      loader: ({ route }) => {
+        return route.path === '/stale' ? stale.promise : fresh.promise
+      },
+    })
+
+    const staleLoad = store.load({ path: '/stale' })
+    const freshLoad = store.load({ path: '/fresh' })
+
+    fresh.resolve({
+      schemaVersion: '1.0',
+      node: { componentName: 'Text', props: { children: 'fresh' } },
+    })
+    await expect(freshLoad).resolves.toMatchObject({
+      status: 'success',
+      route: { path: '/fresh' },
+    })
+
+    stale.reject(new Error('Stale failed'))
+    await expect(staleLoad).resolves.toMatchObject({
+      status: 'success',
+      route: { path: '/fresh' },
+    })
+    expect(store.getState().error).toBeUndefined()
+    expect(store.getState().response?.node).toEqual({
+      componentName: 'Text',
+      props: { children: 'fresh' },
+    })
+  })
+
   it('validates SDUI nodes', () => {
     expect(
       validateSDUINode({
@@ -276,6 +451,140 @@ describe('@sdui-kit/core', () => {
       path: '$.componentName',
       message: 'componentName must be a non-empty string',
     })
+  })
+
+  it('validates and collects nested SDUI nodes in arbitrary props', () => {
+    const node = {
+      componentName: 'Screen',
+      props: {
+        slots: {
+          content: {
+            componentName: 'UnknownPanel',
+            props: {
+              footer: {
+                componentName: '',
+              },
+            },
+          },
+        },
+      },
+    }
+
+    expect(validateSDUINode(node).issues).toContainEqual({
+      path: '$.props.slots.content.props.footer.componentName',
+      message: 'componentName must be a non-empty string',
+    })
+    expect(
+      collectUnknownComponents(node, (componentName) => componentName === 'Screen'),
+    ).toEqual(['UnknownPanel'])
+  })
+
+  it('does not collect components from action payload data', () => {
+    const node = {
+      componentName: 'Button',
+      props: {
+        action: {
+          type: 'request',
+          endpoint: '/api/save',
+          params: {
+            componentName: 'DomainFilter',
+          },
+          body: {
+            metadata: {
+              componentName: 'InvoiceDomain',
+            },
+          },
+          payload: {
+            componentName: 'DomainPayload',
+          },
+          success: {
+            type: 'openModal',
+            children: {
+              componentName: 'UnknownDialog',
+            },
+          },
+          error: {
+            type: 'sequence',
+            actions: [
+              {
+                type: 'drawerOpen',
+                drawerId: 'details',
+                payload: {
+                  componentName: 'DrawerPayload',
+                },
+              },
+              {
+                type: 'openModal',
+                children: [
+                  { componentName: 'KnownText' },
+                  { componentName: 'UnknownError' },
+                ],
+              },
+            ],
+          },
+        },
+      },
+    }
+
+    expect(
+      collectUnknownComponents(
+        node,
+        (componentName) =>
+          componentName === 'Button' || componentName === 'KnownText',
+      ),
+    ).toEqual(['UnknownDialog', 'UnknownError'])
+  })
+
+  it('validates nested actions with useful paths', () => {
+    const result = validateSDUINode({
+      componentName: 'Button',
+      props: {
+        action: {
+          type: 'sequence',
+          actions: [
+            { type: 'toast' },
+            {
+              type: 'request',
+              endpoint: '/api/save',
+              success: { type: 'navigate' },
+              error: { type: 'drawerOpen' },
+            },
+            { type: 'UI_ONLY', ui: { type: 'toast' } },
+            { type: 'openModal', children: { props: {} } },
+            { type: 'openModal' },
+          ],
+        },
+      },
+    })
+
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        {
+          path: '$.props.action.actions[0].message',
+          message: 'message must be a non-empty string',
+        },
+        {
+          path: '$.props.action.actions[1].success.to',
+          message: 'to must be a non-empty string',
+        },
+        {
+          path: '$.props.action.actions[1].error.drawerId',
+          message: 'drawerId must be a non-empty string',
+        },
+        {
+          path: '$.props.action.actions[2].ui.message',
+          message: 'message must be a non-empty string',
+        },
+        {
+          path: '$.props.action.actions[3].children.componentName',
+          message: 'componentName must be a non-empty string',
+        },
+        {
+          path: '$.props.action.actions[4].children',
+          message: 'children is required for openModal actions',
+        },
+      ]),
+    )
   })
 
   it('validates route manifests', () => {
@@ -360,3 +669,18 @@ describe('@sdui-kit/core', () => {
     })
   })
 })
+
+function deferred<T>(): {
+  promise: Promise<T>
+  resolve: (value: T) => void
+  reject: (reason?: unknown) => void
+} {
+  let resolve!: (value: T) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise
+    reject = rejectPromise
+  })
+
+  return { promise, resolve, reject }
+}

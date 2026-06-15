@@ -195,7 +195,7 @@ Use `request` for the mutation and put follow-up UI in `success`. Cache invalida
 
 `sequence` is not fire-and-forget. The runner awaits each action before starting the next one. If a request, cache adapter, modal adapter, drawer adapter, navigation adapter, or screen refresh returns a promise, the next action waits for it.
 
-If an action in a sequence throws, later sequence actions are not run. For request-specific recovery, use `error`.
+If an action in a sequence throws, later sequence actions are not run. For mutation request failures, use `error`.
 
 ## Delete With Confirm
 
@@ -241,7 +241,9 @@ If an action in a sequence throws, later sequence actions are not run. For reque
 
 ## Request Success And Error Branches
 
-`success` runs with `response` in runtime context. `error` runs with `error` in runtime context, then the original request error is rethrown so form stores, buttons, or other callers can still react to failure.
+`success` runs with `response` in runtime context. `error` runs only when the mutation request executor or `DataAdapter.request` rejects. It receives `error` in runtime context, then the original request error is rethrown so form stores, buttons, or other callers can still react to failure.
+
+Failures in cache invalidation or `success` follow-up actions are post-request failures. They reject through the normal `ActionRunner.run(...)` flow and `onError`, but they do not run the request `error` branch.
 
 ```json
 {
