@@ -4,45 +4,24 @@ Install the core runtime and one UI adapter:
 
 ::: code-group
 
-```bash [npm]
-npm install @sdui-kit/core @sdui-kit/react
-```
-
-```bash [pnpm]
+```bash [React]
 pnpm add @sdui-kit/core @sdui-kit/react
 ```
 
-```bash [yarn]
-yarn add @sdui-kit/core @sdui-kit/react
-```
-
-```bash [bun]
-bun add @sdui-kit/core @sdui-kit/react
+```bash [Vue]
+pnpm add @sdui-kit/core @sdui-kit/vue
 ```
 
 :::
 
-Register components from your application:
+Then use the matching adapter page:
 
-```tsx
-import { ActionRunner } from '@sdui-kit/core'
-import { SDUIProvider, SDUIRenderer, createReactRegistry } from '@sdui-kit/react'
+- [React Adapter](../integrations/react.md)
+- [Vue Adapter](../integrations/vue.md)
 
-const registry = createReactRegistry({
-  text: Text,
-  button: Button,
-})
+The backend payload is the same for every framework:
 
-const actionRunner = new ActionRunner({
-  request: ({ endpoint, method, body, params }) =>
-    api.request({ url: endpoint, method, data: body, params }),
-  toast: (action) => console.log(action.message),
-})
-```
-
-Render a backend payload:
-
-```tsx
+```ts
 const screen = {
   schemaVersion: '1.0',
   componentName: 'button',
@@ -61,21 +40,13 @@ const screen = {
     },
   },
 }
-
-export function App() {
-  return (
-    <SDUIProvider registry={registry} actionRunner={actionRunner}>
-      <SDUIRenderer node={screen} />
-    </SDUIProvider>
-  )
-}
 ```
 
-The package does not ship a design system. The consuming app owns visual components, styling, router, API client, modals and notifications.
+Register app components in the selected framework adapter:
 
-The registry is intentionally just a component map. Use direct components when backend props match component props:
+::: code-group
 
-```tsx
+```tsx [React]
 const registry = createReactRegistry({
   Text,
   Button,
@@ -83,7 +54,17 @@ const registry = createReactRegistry({
 })
 ```
 
-The SDUI payload uses those keys as `componentName`. Matching is case-sensitive:
+```ts [Vue]
+const registry = createVueRegistry({
+  Text,
+  Button,
+  SummaryCard,
+})
+```
+
+:::
+
+The payload uses those keys as `componentName`. Matching is case-sensitive:
 
 ```json
 {
@@ -95,10 +76,6 @@ The SDUI payload uses those keys as `componentName`. Matching is case-sensitive:
 }
 ```
 
-Use wrappers only when the SDUI payload needs adaptation:
+The packages do not ship a design system. The consuming app owns visual components, styling, router, API client, modals and notifications.
 
-```tsx
-const registry = createReactRegistry({
-  badge: ({ label, ...props }) => <Badge {...props}>{label}</Badge>,
-})
-```
+Use [Component Registry](./registry.md), [Actions](./actions.md), and [Navigation & Screens](./navigation-screens.md) for the framework-neutral contracts.

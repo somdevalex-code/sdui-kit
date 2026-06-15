@@ -6,13 +6,25 @@ The registry maps backend `componentName` values to frontend components. It is i
 
 Use this when component names can be shared with backend exactly:
 
-```tsx
+::: code-group
+
+```tsx [React]
 const registry = createReactRegistry({
   Text,
   Button,
   SummaryCard,
 })
 ```
+
+```ts [Vue]
+const registry = createVueRegistry({
+  Text,
+  Button,
+  SummaryCard,
+})
+```
+
+:::
 
 Backend payload:
 
@@ -32,7 +44,9 @@ Matching is case-sensitive. `"SummaryCard"` and `"summaryCard"` are different co
 
 Use aliases when backend names should be stable or design-system names should stay private:
 
-```tsx
+::: code-group
+
+```tsx [React]
 const registry = createReactRegistry({
   text: Text,
   button: Button,
@@ -40,27 +54,57 @@ const registry = createReactRegistry({
 })
 ```
 
+```ts [Vue]
+const registry = createVueRegistry({
+  text: Text,
+  button: Button,
+  summaryCard: SummaryCard,
+})
+```
+
+:::
+
 ## Prop Mapping
 
 Use wrappers when backend props do not match component props:
 
-```tsx
+::: code-group
+
+```tsx [React]
 const registry = createReactRegistry({
   badge: ({ label, ...props }) => <Badge {...props}>{label}</Badge>,
 })
 ```
 
+```ts [Vue]
+const registry = createVueRegistry({
+  badge: BadgeAdapter,
+})
+```
+
+:::
+
 ## Runtime-Aware Components
 
-Most components should stay unaware of SDUI. For advanced components, use hooks:
+Most components should stay unaware of SDUI. For advanced components, use adapter hooks:
 
-```tsx
+::: code-group
+
+```tsx [React]
 import { useSDUIAction } from '@sdui-kit/react'
 ```
 
+```ts [Vue]
+import { useSDUIAction } from '@sdui-kit/vue'
+```
+
+:::
+
 Only opt into injected runtime props when a component really needs them:
 
-```tsx
+::: code-group
+
+```tsx [React]
 const registry = createReactRegistry({
   AdvancedWidget: {
     component: AdvancedWidget,
@@ -68,3 +112,14 @@ const registry = createReactRegistry({
   },
 })
 ```
+
+```ts [Vue]
+const registry = createVueRegistry({
+  AdvancedWidget: {
+    component: AdvancedWidget,
+    metadata: { injectRuntime: true },
+  },
+})
+```
+
+:::

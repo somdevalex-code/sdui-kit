@@ -40,11 +40,21 @@ Backend sends props inside the `props` object:
 
 The frontend registers a component that receives those props:
 
-```tsx
+::: code-group
+
+```tsx [React]
 const registry = createReactRegistry({
   Badge,
 })
 ```
+
+```ts [Vue]
+const registry = createVueRegistry({
+  Badge,
+})
+```
+
+:::
 
 Then backend uses the same key:
 
@@ -61,23 +71,43 @@ Then backend uses the same key:
 
 If backend prop names need mapping, use a wrapper:
 
-```tsx
+::: code-group
+
+```tsx [React]
 const registry = createReactRegistry({
   badge: ({ label, ...props }) => <Badge {...props}>{label}</Badge>,
 })
 ```
 
-The React adapter does not inject SDUI internals into every component by default. Components receive backend props plus rendered `children`. If `props.action` is provided, the adapter maps it to `onClick` and does not forward the raw `action` prop.
+```ts [Vue]
+const registry = createVueRegistry({
+  badge: BadgeAdapter,
+})
+```
+
+:::
+
+Framework adapters do not inject SDUI internals into every component by default. Components receive backend props plus rendered children or slots. If `props.action` is provided, React and Vue adapters map it to `onClick` and do not forward the raw `action` prop.
 
 Advanced components can access runtime behavior through hooks:
 
-```tsx
+::: code-group
+
+```tsx [React]
 import { useSDUI, useSDUIAction } from '@sdui-kit/react'
 ```
 
+```ts [Vue]
+import { useSDUI, useSDUIAction } from '@sdui-kit/vue'
+```
+
+:::
+
 If a registered component must receive runtime props directly, register it with metadata `{ injectRuntime: true }`.
 
-```tsx
+::: code-group
+
+```tsx [React]
 const registry = createReactRegistry({
   advancedWidget: {
     component: AdvancedWidget,
@@ -85,6 +115,17 @@ const registry = createReactRegistry({
   },
 })
 ```
+
+```ts [Vue]
+const registry = createVueRegistry({
+  advancedWidget: {
+    component: AdvancedWidget,
+    metadata: { injectRuntime: true },
+  },
+})
+```
+
+:::
 
 Unknown components should use the adapter fallback component. In development, show the missing component name. In production, prefer a quiet placeholder or omit the block.
 

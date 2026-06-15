@@ -123,11 +123,13 @@ const menuItems = manifest.routes
 
 Use `metadata` for application-specific concerns such as permissions or grouping.
 
-## React Screen Runtime
+## Framework Screen Runtime
 
-React apps should compose screen loading through `SDUIScreenProvider` and render through `SDUIScreenRenderer`:
+Framework adapters compose screen loading through `SDUIScreenProvider` and render through `SDUIScreenRenderer`:
 
-```tsx
+::: code-group
+
+```tsx [React]
 <SDUIScreenProvider
   registry={registry}
   actionRunner={actionRunner}
@@ -137,7 +139,21 @@ React apps should compose screen loading through `SDUIScreenProvider` and render
 </SDUIScreenProvider>
 ```
 
-`SDUIScreenProvider` receives adapters from the app. It should expose loading, success, error, and refreshing states through `useSDUIScreen`.
+```vue [Vue]
+<template>
+  <SDUIScreenProvider
+    :registry="registry"
+    :action-runner="actionRunner"
+    :screen-store="screenStore"
+  >
+    <SDUIScreenRenderer />
+  </SDUIScreenProvider>
+</template>
+```
+
+:::
+
+`SDUIScreenProvider` receives adapters from the app. React exposes screen state through `useSDUIScreen()`. Vue exposes it as a shallow ref from `useSDUIScreen()`.
 
 ## Navigation Actions
 

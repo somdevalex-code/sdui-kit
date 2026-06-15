@@ -12,7 +12,22 @@ export default defineConfig({
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'Protocol', link: '/guide/protocol' },
       { text: 'Runtime', link: '/guide/navigation-screens' },
-      { text: 'Integrations', link: '/integrations/tanstack-query' },
+      {
+        text: 'Frameworks',
+        items: [
+          { text: 'React', link: '/integrations/react' },
+          { text: 'Vue', link: '/integrations/vue' },
+        ],
+      },
+      {
+        text: 'Integrations',
+        items: [
+          { text: 'TanStack Query', link: '/integrations/tanstack-query' },
+          { text: 'React Router', link: '/integrations/react-router' },
+          { text: 'Vue Router', link: '/integrations/vue-router' },
+          { text: 'Next App Router', link: '/integrations/next' },
+        ],
+      },
       { text: 'Recipes', link: '/recipes/layouts' },
       { text: 'Examples', link: '/examples/react-basic' },
     ],
@@ -39,13 +54,26 @@ export default defineConfig({
         ],
       },
       {
-        text: 'Integrations',
+        text: 'Framework Adapters',
         items: [
-          { text: 'TanStack Query', link: '/integrations/tanstack-query' },
-          { text: 'TanStack Router', link: '/integrations/tanstack-router' },
+          { text: 'React', link: '/integrations/react' },
+          { text: 'Vue', link: '/integrations/vue' },
+        ],
+      },
+      {
+        text: 'Router Adapters',
+        items: [
           { text: 'React Router', link: '/integrations/react-router' },
+          { text: 'Vue Router', link: '/integrations/vue-router' },
+          { text: 'TanStack Router', link: '/integrations/tanstack-router' },
           { text: 'Next App Router', link: '/integrations/next' },
           { text: 'Browser History', link: '/integrations/browser-history' },
+        ],
+      },
+      {
+        text: 'Data Integrations',
+        items: [
+          { text: 'TanStack Query', link: '/integrations/tanstack-query' },
           { text: 'RTK Query Pattern', link: '/integrations/rtk-query' },
         ],
       },

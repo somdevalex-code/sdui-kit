@@ -2,32 +2,38 @@
 
 SDUI Kit is a framework-agnostic runtime for Server-Driven UI.
 
-Use the core package to define the JSON protocol, actions and expressions. Use a framework adapter, such as `@sdui-kit/react`, to render the payload with your own components.
+Use the core package to define the JSON protocol, actions and expressions. Choose a framework adapter to render the payload with your own components.
 
 ::: code-group
 
-```bash [npm]
-npm install @sdui-kit/core @sdui-kit/react
-```
-
-```bash [pnpm]
+```bash [React]
 pnpm add @sdui-kit/core @sdui-kit/react
 ```
 
-```bash [yarn]
-yarn add @sdui-kit/core @sdui-kit/react
-```
-
-```bash [bun]
-bun add @sdui-kit/core @sdui-kit/react
+```bash [Vue]
+pnpm add @sdui-kit/core @sdui-kit/vue
 ```
 
 :::
 
-Start with [Getting Started](./guide/getting-started.md).
+Use the framework selector in the top navigation for adapter-specific setup.
+
+::: code-group
+
+```ts [React]
+import { SDUIProvider, SDUIRenderer, createReactRegistry } from '@sdui-kit/react'
+```
+
+```ts [Vue]
+import { SDUIProvider, SDUIRenderer, createVueRegistry } from '@sdui-kit/vue'
+```
+
+:::
 
 ## Common Paths
 
+- Start with the framework-neutral [Getting Started](./guide/getting-started.md).
+- Set up [React](./integrations/react.md) or [Vue](./integrations/vue.md).
 - Learn the payload shape in [Protocol](./guide/protocol.md).
 - Register app components with [Component Registry](./guide/registry.md).
 - Agree with backend on [Backend Contract](./guide/backend-contract.md).
