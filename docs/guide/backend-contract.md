@@ -2,6 +2,8 @@
 
 Backend owns layout, component selection, props, actions, and form rules. Frontend owns actual components, styling, adapters, and security boundaries.
 
+For local backend emulation during app development or tests, see [Backend Mocking](./backend-mocking.md).
+
 ## Node Response
 
 Return a single node or an array of nodes:

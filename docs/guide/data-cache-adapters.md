@@ -23,6 +23,8 @@ const actionRunner = new ActionRunner({
 
 Request actions should not know whether the app uses `fetch`, Axios, RTK Query, TanStack Query, GraphQL, or mocks.
 
+For local development and tests, this request executor can point at [MSW-backed endpoints](./backend-mocking.md).
+
 ## Level 2: DataAdapter
 
 Use `DataAdapter` when you want to compose request behavior outside `ActionRunner`:

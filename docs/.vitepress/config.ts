@@ -33,6 +33,7 @@ export default defineConfig({
           { text: 'Expressions', link: '/guide/expressions' },
           { text: 'Forms', link: '/guide/forms' },
           { text: 'Navigation & Screens', link: '/guide/navigation-screens' },
+          { text: 'Backend Mocking', link: '/guide/backend-mocking' },
           { text: 'Data & Cache Adapters', link: '/guide/data-cache-adapters' },
           { text: 'Adapters', link: '/guide/adapters' },
         ],
