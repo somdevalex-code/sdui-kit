@@ -30,6 +30,8 @@ const registry = createReactRegistry({
 })
 
 const actionRunner = new ActionRunner({
+  request: ({ endpoint, method, body, params }) =>
+    api.request({ url: endpoint, method, data: body, params }),
   toast: (action) => console.log(action.message),
 })
 
@@ -40,9 +42,15 @@ const screen = {
     children: 'Save',
     variant: 'primary',
     action: {
-      type: 'toast',
-      message: 'Saved',
-      status: 'success',
+      type: 'request',
+      endpoint: '/api/save',
+      method: 'POST',
+      body: { id: '123' },
+      success: {
+        type: 'toast',
+        message: 'Saved',
+        status: 'success',
+      },
     },
   },
 }

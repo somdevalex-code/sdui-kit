@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
   ActionRunner,
+  createRequestAdapter,
   createScreenStore,
   evaluateCondition,
   resolveExpression,
@@ -88,6 +89,26 @@ describe('@sdui-kit/core', () => {
     )
   })
 
+  it('creates a data adapter from a simple request executor', async () => {
+    const request = vi.fn(async () => ({ ok: true }))
+    const adapter = createRequestAdapter(request)
+    const runner = new ActionRunner({ data: adapter })
+
+    await runner.run({
+      type: 'request',
+      endpoint: '/api/ping',
+      method: 'GET',
+    })
+
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        endpoint: '/api/ping',
+        method: 'GET',
+      }),
+      expect.any(Object),
+    )
+  })
+
   it('delegates navigation and screen refresh through adapters', async () => {
     const navigate = vi.fn()
     const goBack = vi.fn()
@@ -148,6 +169,20 @@ describe('@sdui-kit/core', () => {
       ['Applications', { type: 'Application', id: 1 }],
       expect.any(Object),
     )
+  })
+
+  it('allows invalidate metadata without a cache adapter', async () => {
+    const request = vi.fn(async () => ({ ok: true }))
+    const runner = new ActionRunner({ request })
+
+    await expect(
+      runner.run({
+        type: 'request',
+        endpoint: '/api/save',
+        invalidate: ['Applications'],
+      }),
+    ).resolves.toEqual({ ok: true })
+    expect(request).toHaveBeenCalled()
   })
 
   it('loads, refreshes, and reports screen store state', async () => {

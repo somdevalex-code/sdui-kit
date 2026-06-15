@@ -26,7 +26,7 @@ For larger apps, split adapters by concern:
 
 - [Navigation & Screens](./navigation-screens.md) for route context and screen loading.
 - [Data & Cache Adapters](./data-cache-adapters.md) for requests, invalidation and screen stores.
-- [TanStack Query](../integrations/tanstack-query.md), [React Router](../integrations/react-router.md), [Browser History](../integrations/browser-history.md) and [RTK Query](../integrations/rtk-query.md) for integration patterns.
+- [TanStack Query](../integrations/tanstack-query.md), [React Router](../integrations/react-router.md), [Next App Router](../integrations/next.md), [Browser History](../integrations/browser-history.md) and [RTK Query](../integrations/rtk-query.md) for integration patterns.
 
 To support another framework, implement a renderer that:
 

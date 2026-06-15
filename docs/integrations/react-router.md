@@ -54,7 +54,7 @@ Pass `navigationAdapter` into `ActionRunner`, not `SDUIScreenProvider`:
 const actionRunner = new ActionRunner({
   navigation: navigationAdapter,
   screen: screenStore,
-  data: dataAdapter,
+  request: apiRequest,
 })
 ```
 

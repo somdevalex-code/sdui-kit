@@ -18,6 +18,15 @@ export interface DataAdapter {
   request(request: DataRequest, context: RuntimeContext): MaybePromise<unknown>
 }
 
+export function createRequestAdapter(
+  request: (
+    request: DataRequest,
+    context: RuntimeContext,
+  ) => MaybePromise<unknown>,
+): DataAdapter {
+  return { request }
+}
+
 export interface CacheSetOptions {
   ttlMs?: number
   tags?: InvalidationTag[]

@@ -1,10 +1,19 @@
 # TanStack Query Integration
 
-TanStack Query is a good fit for SDUI screen loading because query keys, cancellation, refetch, and invalidation map cleanly to `ScreenStore`, `DataAdapter`, and `CacheAdapter`.
+TanStack Query is an optional advanced integration. Use it when the app needs query keys, cancellation, refetch, and invalidation around SDUI screens or request actions. For small apps, a simple `request` executor is enough.
 
 ## Adapter Shape
 
-Keep TanStack imports in the app or `@sdui-kit/tanstack-query`, not in core:
+Keep TanStack imports in the app or `@sdui-kit/tanstack-query`, not in core. Request execution can still be a plain function:
+
+```ts
+const actionRunner = new ActionRunner({
+  request: ({ endpoint, method, body, params, signal }) =>
+    api.request({ url: endpoint, method, data: body, params, signal }),
+})
+```
+
+Move to explicit adapters when you also want cache coordination:
 
 ```ts
 const dataAdapter: DataAdapter = {
@@ -49,7 +58,7 @@ Backend can attach cache tags to screens and mutations:
 }
 ```
 
-After a mutation, `ActionRunner` calls `CacheAdapter.invalidate(tags)`. The TanStack adapter decides how SDUI tags map to query keys.
+After a mutation with `invalidate`, `ActionRunner` calls `CacheAdapter.invalidate(tags)` if a cache adapter exists. The TanStack adapter decides how SDUI tags map to query keys.
 
 ## Notes
 

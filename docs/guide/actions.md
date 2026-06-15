@@ -33,7 +33,6 @@ Supported built-ins:
 - `navigate`
 - `goBack`
 - `refreshScreen`
-- `invalidate`
 - `openModal`
 - `closeModal`
 - `drawerOpen`
@@ -42,8 +41,8 @@ Supported built-ins:
 Navigation, requests and invalidation are delegated to adapters:
 
 - `navigate` and `goBack` use `NavigationAdapter`.
-- `request` uses `DataAdapter`.
-- `invalidate` uses `CacheAdapter`.
+- `request` uses a simple `request` executor or `DataAdapter`.
+- `request.invalidate` uses `CacheAdapter` when one is provided.
 - `refreshScreen` refreshes the current `ScreenStore`.
 
 Legacy aliases from the original example are supported for migration: `REQUEST`, `UI_ONLY` and `uiSequence`.

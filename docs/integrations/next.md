@@ -27,7 +27,7 @@ function SDUIRouteBoundary() {
   const actionRunner = new ActionRunner({
     navigation,
     screen: screenStore,
-    data: dataAdapter,
+    request: apiRequest,
   })
 
   useEffect(() => {

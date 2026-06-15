@@ -25,12 +25,10 @@ export function App() {
   const actionRunner = useMemo(
     () =>
       new ActionRunner({
-        data: {
-          request: async (request) => {
-            await new Promise((resolve) => setTimeout(resolve, 300))
-            console.info('SDUI data adapter received:', request)
-            return { id: 'created' }
-          },
+        request: async (request) => {
+          await new Promise((resolve) => setTimeout(resolve, 300))
+          console.info('SDUI request executor received:', request)
+          return { id: 'created' }
         },
         navigation: createExampleNavigation(screenStore.setRoute.bind(screenStore)),
         screen: screenStore,

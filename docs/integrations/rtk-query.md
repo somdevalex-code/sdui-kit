@@ -1,6 +1,20 @@
 # RTK Query Integration Pattern
 
-RTK Query can power SDUI requests and invalidation, but it should stay outside core. Treat it as an app-level `DataAdapter` and `CacheAdapter` implementation.
+RTK Query can power SDUI requests and invalidation, but it should stay outside core. For many apps, the simplest bridge is a plain `request` executor; use `DataAdapter` and `CacheAdapter` only when you need reusable integration.
+
+## Simple Request Executor
+
+```ts
+const actionRunner = new ActionRunner({
+  request: ({ endpoint, method, body, params }) =>
+    baseQuery({
+      url: endpoint,
+      method,
+      body,
+      params,
+    }),
+})
+```
 
 ## DataAdapter
 
