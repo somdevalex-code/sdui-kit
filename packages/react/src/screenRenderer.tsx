@@ -1,5 +1,9 @@
 import React, { useEffect } from 'react'
-import { RuntimeContext, ScreenState } from '@sdui-kit/core'
+import {
+  RuntimeContext,
+  ScreenState,
+  isRenderableScreenResponse,
+} from '@sdui-kit/core'
 
 import { SDUIRenderer } from './renderer'
 import { useSDUIScreen, useSDUIScreenStore } from './screenContext'
@@ -20,27 +24,35 @@ export function SDUIScreenRenderer({
     }
   }, [state.status, store])
 
-  if ((state.status === 'idle' || state.status === 'loading') && !state.response) {
+  const renderableResponse =
+    state.response && isRenderableScreenResponse(state.response)
+      ? state.response
+      : undefined
+
+  if (
+    (state.status === 'idle' || state.status === 'loading') &&
+    !renderableResponse
+  ) {
     return <>{renderFallback(loadingFallback, state)}</>
   }
 
-  if (state.status === 'error' && !state.response) {
+  if (state.status === 'error' && !renderableResponse) {
     return <>{renderFallback(errorFallback, state) ?? null}</>
   }
 
-  if (!state.response) {
+  if (!renderableResponse) {
     return <>{renderFallback(emptyFallback, state)}</>
   }
 
   const renderContext: RuntimeContext = {
     ...context,
     route: state.route,
-    screen: state.response,
-    data: state.response.data,
+    screen: renderableResponse,
+    data: renderableResponse.data,
     screenState: state,
   }
 
-  return <SDUIRenderer node={state.response.node} context={renderContext} />
+  return <SDUIRenderer node={renderableResponse.node} context={renderContext} />
 }
 
 function renderFallback(

@@ -114,6 +114,12 @@ importers:
         specifier: workspace:*
         version: link:../core
 
+  packages/tanstack-router:
+    dependencies:
+      '@sdui-kit/core':
+        specifier: workspace:*
+        version: link:../core
+
 packages:
 
   '@algolia/abtesting@1.20.0':

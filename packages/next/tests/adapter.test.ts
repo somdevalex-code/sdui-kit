@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { createNextNavigationAdapter } from '../src'
+import { createNextNavigationAdapter, createNextRouteContext } from '../src'
 
 describe('@sdui-kit/next', () => {
   it('delegates push, replace, and back to a Next-like router', () => {
@@ -43,5 +43,33 @@ describe('@sdui-kit/next', () => {
       '/applications?status=active',
       expect.objectContaining({ to: '/applications' }),
     )
+  })
+
+  it('builds route context from App Router pathname and params', () => {
+    expect(
+      createNextRouteContext({
+        pathname: '/applications/42',
+        params: { slug: ['applications', '42'], ignored: undefined },
+        searchParams: new URLSearchParams('tab=summary'),
+        screenId: 'applications.details',
+      }),
+    ).toEqual({
+      path: '/applications/42',
+      screenId: 'applications.details',
+      params: { slug: 'applications/42' },
+      query: { tab: 'summary' },
+    })
+  })
+
+  it('normalizes App Router search param arrays without path joining', () => {
+    expect(
+      createNextRouteContext({
+        pathname: '/applications',
+        searchParams: { tag: ['a', 'b'], page: 2 },
+      }).query,
+    ).toEqual({
+      tag: 'b',
+      page: '2',
+    })
   })
 })

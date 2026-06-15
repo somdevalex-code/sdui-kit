@@ -29,13 +29,9 @@ This code should live outside core.
 The app shell can parse browser location into SDUI route context:
 
 ```ts
-function getRouteContext(): RouteContext {
-  return {
-    path: window.location.pathname,
-    query: Object.fromEntries(new URLSearchParams(window.location.search)),
-    state: window.history.state ?? undefined,
-  }
-}
+import { createBrowserHistoryRouteContext } from '@sdui-kit/browser-history'
+
+const route = createBrowserHistoryRouteContext()
 ```
 
 Listen to `popstate` and notify `ScreenStore` so back/forward navigation loads the correct screen.

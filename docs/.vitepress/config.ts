@@ -41,6 +41,7 @@ export default defineConfig({
         text: 'Integrations',
         items: [
           { text: 'TanStack Query', link: '/integrations/tanstack-query' },
+          { text: 'TanStack Router', link: '/integrations/tanstack-router' },
           { text: 'React Router', link: '/integrations/react-router' },
           { text: 'Next App Router', link: '/integrations/next' },
           { text: 'Browser History', link: '/integrations/browser-history' },

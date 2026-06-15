@@ -1,38 +1,40 @@
 # React Router Integration
 
-React Router should be connected through a `NavigationAdapter`. The React SDUI package should not import `react-router-dom` directly.
+React Router should be connected through adapter helpers. Neither `@sdui-kit/core` nor `@sdui-kit/react` should import `react-router-dom`.
 
-## NavigationAdapter
+## Catch-All Boundary
 
-Create the adapter inside a component that can access React Router hooks:
+Declare a host-owned catch-all route such as `/app/*`. The boundary component reads React Router state, converts it into `RouteContext`, and asks `ScreenStore` to load the backend screen.
 
 ```tsx
+import { useEffect } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { ActionRunner } from '@sdui-kit/core'
+import {
+  createReactRouterNavigationAdapter,
+  createReactRouterRouteContext,
+} from '@sdui-kit/react-router'
+
 function SDUIRouteBoundary() {
   const navigate = useNavigate()
   const location = useLocation()
   const params = useParams()
 
-  const navigationAdapter: NavigationAdapter = {
-    navigate: (action) => {
-      const to = {
-        pathname: action.to,
-        search: new URLSearchParams(action.query).toString(),
-      }
-
-      navigate(to, {
-        replace: action.replace,
-        state: action.state,
-      })
-    },
-    goBack: () => navigate(-1),
-  }
-
-  const route = {
-    path: location.pathname,
+  const navigationAdapter = createReactRouterNavigationAdapter({ navigate })
+  const route = createReactRouterRouteContext({
+    location,
     params,
-    query: Object.fromEntries(new URLSearchParams(location.search)),
-    state: location.state,
-  }
+  })
+
+  const actionRunner = new ActionRunner({
+    navigation: navigationAdapter,
+    screen: screenStore,
+    request: apiRequest,
+  })
+
+  useEffect(() => {
+    void screenStore.setRoute(route)
+  }, [location.pathname, location.search, location.state, params])
 
   return (
     <SDUIScreenProvider
@@ -46,19 +48,25 @@ function SDUIRouteBoundary() {
 }
 ```
 
-## Route Changes
+## Optional Route Objects
 
-Pass `navigationAdapter` into `ActionRunner`, not `SDUIScreenProvider`:
+For apps that want to build React Router route objects from an SDUI manifest, use the manifest helper at the adapter layer:
 
-```ts
-const actionRunner = new ActionRunner({
-  navigation: navigationAdapter,
-  screen: screenStore,
-  request: apiRequest,
+```tsx
+const routes = createReactRouterRoutesFromManifest(manifest, {
+  element: <SDUIRouteBoundary />,
 })
 ```
 
-When React Router updates `location`, call `screenStore.setRoute(route)` from an effect so the matching `SDUIScreenResponse` loads.
+This preserves function elements as values. If an app needs per-route elements, use the explicit factory field:
+
+```tsx
+const routes = createReactRouterRoutesFromManifest(manifest, {
+  elementForRoute: (route) => routeElements[route.id],
+})
+```
+
+This is optional. The primary model remains one host-owned catch-all boundary.
 
 ## Backend Payload
 

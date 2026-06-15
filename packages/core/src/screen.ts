@@ -8,6 +8,7 @@ import {
 
 export interface RouteContext {
   path: string
+  screenId?: string
   params?: Record<string, string>
   query?: Record<string, string>
   state?: Record<string, unknown>
@@ -15,6 +16,7 @@ export interface RouteContext {
 
 export interface ScreenRequest {
   route: RouteContext
+  screenId?: string
   signal?: AbortSignal
 }
 
@@ -24,13 +26,63 @@ export interface ScreenCachePolicy {
   tags?: InvalidationTag[]
 }
 
-export interface SDUIScreenResponse {
+export interface SDUIRouteParamDefinition {
+  type?: 'string' | 'number' | 'boolean'
+  required?: boolean
+  description?: string
+  metadata?: Record<string, unknown>
+}
+
+export interface SDUIRouteDefinition {
+  id: string
+  path: string
+  screenId?: string
+  title?: string
+  params?: Record<string, SDUIRouteParamDefinition>
+  metadata?: Record<string, unknown>
+  children?: SDUIRouteDefinition[]
+}
+
+export interface SDUIRouteManifest {
   schemaVersion: string
+  routes: SDUIRouteDefinition[]
+  metadata?: Record<string, unknown>
+}
+
+export interface SDUIScreenRenderResponse {
+  schemaVersion: string
+  status?: 'ok'
   node: SDUINode | SDUINode[]
   data?: Record<string, unknown>
   meta?: Record<string, unknown>
   cache?: ScreenCachePolicy
 }
+
+export interface SDUIScreenRedirectResponse {
+  schemaVersion: string
+  status: 'redirect'
+  to: string
+  query?: Record<string, unknown>
+  replace?: boolean
+  state?: Record<string, unknown>
+  meta?: Record<string, unknown>
+  cache?: ScreenCachePolicy
+}
+
+export interface SDUIScreenNotFoundResponse {
+  schemaVersion: string
+  status: 'notFound'
+  message?: string
+  node?: SDUINode | SDUINode[]
+  data?: Record<string, unknown>
+  meta?: Record<string, unknown>
+  cache?: ScreenCachePolicy
+}
+
+export type SDUIScreenResponse =
+  | SDUIScreenRenderResponse
+  | SDUIScreenRedirectResponse
+  | SDUIScreenNotFoundResponse
 
 export type ScreenStatus =
   | 'idle'
@@ -138,6 +190,7 @@ export class ScreenStore implements ScreenStoreAdapter {
       const response = await this.loader(
         {
           route: routeCopy,
+          screenId: routeCopy.screenId,
           signal: this.abortController?.signal,
         },
         context,
@@ -178,6 +231,14 @@ export class ScreenStore implements ScreenStoreAdapter {
 
 export function createScreenStore(options: ScreenStoreOptions): ScreenStore {
   return new ScreenStore(options)
+}
+
+export function isRenderableScreenResponse(
+  response: SDUIScreenResponse,
+): response is SDUIScreenRenderResponse | (SDUIScreenNotFoundResponse & {
+  node: SDUINode | SDUINode[]
+}) {
+  return 'node' in response && response.node !== undefined
 }
 
 function copyState(state: ScreenState): ScreenState {

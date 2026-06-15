@@ -200,6 +200,55 @@ describe('@sdui-kit/react', () => {
     expect(error).toContain('Failed /error')
   })
 
+  it('renders loading and error fallbacks after non-renderable responses', () => {
+    const registry = createReactRegistry({})
+    const loading = renderToStaticMarkup(
+      <SDUIScreenProvider
+        registry={registry}
+        actionRunner={new ActionRunner()}
+        screenStore={createStaticScreenStore({
+          status: 'loading',
+          route: { path: '/next' },
+          response: {
+            schemaVersion: '1.0',
+            status: 'redirect',
+            to: '/login',
+          },
+        })}
+      >
+        <SDUIScreenRenderer
+          loadingFallback="Loading next screen"
+          emptyFallback="Empty"
+        />
+      </SDUIScreenProvider>,
+    )
+    const error = renderToStaticMarkup(
+      <SDUIScreenProvider
+        registry={registry}
+        actionRunner={new ActionRunner()}
+        screenStore={createStaticScreenStore({
+          status: 'error',
+          route: { path: '/missing' },
+          response: {
+            schemaVersion: '1.0',
+            status: 'notFound',
+          },
+          error: new Error('No screen'),
+        })}
+      >
+        <SDUIScreenRenderer
+          errorFallback={(state) => `Failed ${state.route.path}`}
+          emptyFallback="Empty"
+        />
+      </SDUIScreenProvider>,
+    )
+
+    expect(loading).toContain('Loading next screen')
+    expect(loading).not.toContain('Empty')
+    expect(error).toContain('Failed /missing')
+    expect(error).not.toContain('Empty')
+  })
+
   it('passes screen route and data into action context', async () => {
     let buttonProps: Record<string, unknown> = {}
     const custom = vi.fn()

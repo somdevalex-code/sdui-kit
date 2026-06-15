@@ -11,7 +11,10 @@ Create the adapter inside a client component that can access Next hooks:
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ActionRunner } from '@sdui-kit/core'
-import { createNextNavigationAdapter } from '@sdui-kit/next'
+import {
+  createNextNavigationAdapter,
+  createNextRouteContext,
+} from '@sdui-kit/next'
 
 function SDUIRouteBoundary() {
   const router = useRouter()
@@ -19,10 +22,10 @@ function SDUIRouteBoundary() {
   const searchParams = useSearchParams()
 
   const navigation = createNextNavigationAdapter({ router })
-  const route = {
-    path: pathname,
-    query: Object.fromEntries(searchParams.entries()),
-  }
+  const route = createNextRouteContext({
+    pathname,
+    searchParams,
+  })
 
   const actionRunner = new ActionRunner({
     navigation,
@@ -48,6 +51,7 @@ function SDUIRouteBoundary() {
 
 ## Notes
 
+- Use `app/[[...slug]]/page.tsx` or an equivalent route segment as the SDUI catch-all boundary.
 - Next App Router does not support arbitrary browser history state in the same way React Router does; keep SDUI `state` usage optional.
 - Build query strings in the adapter and keep backend payloads framework-neutral.
 - Use server routes or API handlers to return `SDUIScreenResponse`.

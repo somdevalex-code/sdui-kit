@@ -7,6 +7,8 @@ This workspace contains an MVP package split:
 - `@sdui-kit/core` - protocol types, component registry, expressions, action runner and payload validation.
 - `@sdui-kit/react` - React provider, renderer and registry helpers.
 - `@sdui-kit/forms` - headless form state, validation, dynamic field state and submit integration.
+- `@sdui-kit/react-router`, `@sdui-kit/tanstack-router`, `@sdui-kit/next`, `@sdui-kit/browser-history` - router integration helpers.
+- `@sdui-kit/tanstack-query` - TanStack Query cache and screen loader helpers.
 - `examples/react-basic` - a small React/Vite integration example.
 - `docs` - VitePress documentation site with protocol and recipe examples.
 

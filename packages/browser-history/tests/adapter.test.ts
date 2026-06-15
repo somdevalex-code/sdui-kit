@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { createBrowserHistoryNavigationAdapter } from '../src'
+import {
+  createBrowserHistoryNavigationAdapter,
+  createBrowserHistoryRouteContext,
+} from '../src'
 
 describe('@sdui-kit/browser-history', () => {
   it('pushes and replaces browser history entries', () => {
@@ -42,5 +45,20 @@ describe('@sdui-kit/browser-history', () => {
       '/applications?status=active',
       expect.objectContaining({ to: '/applications' }),
     )
+  })
+
+  it('builds route context from URLs and state', () => {
+    expect(
+      createBrowserHistoryRouteContext({
+        url: '/applications/42?tab=summary',
+        state: { from: 'list' },
+        screenId: 'applications.details',
+      }),
+    ).toEqual({
+      path: '/applications/42',
+      screenId: 'applications.details',
+      query: { tab: 'summary' },
+      state: { from: 'list' },
+    })
   })
 })

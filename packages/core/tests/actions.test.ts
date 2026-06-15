@@ -6,7 +6,9 @@ import {
   createScreenStore,
   evaluateCondition,
   resolveExpression,
+  validateSDUIRouteManifest,
   validateSDUINode,
+  validateSDUIScreenResponse,
 } from '../src'
 
 describe('@sdui-kit/core', () => {
@@ -211,6 +213,39 @@ describe('@sdui-kit/core', () => {
     )
   })
 
+  it('passes screen id, route params, query, and state to screen loaders', async () => {
+    const loader = vi.fn(async () => ({
+      schemaVersion: '1.0',
+      node: { componentName: 'Text' },
+    }))
+    const store = createScreenStore({
+      route: { path: '/applications' },
+      loader,
+    })
+
+    await store.setRoute({
+      path: '/applications/42',
+      screenId: 'applications.details',
+      params: { id: '42' },
+      query: { tab: 'summary' },
+      state: { from: 'list' },
+    })
+
+    expect(loader).toHaveBeenCalledWith(
+      expect.objectContaining({
+        screenId: 'applications.details',
+        route: {
+          path: '/applications/42',
+          screenId: 'applications.details',
+          params: { id: '42' },
+          query: { tab: 'summary' },
+          state: { from: 'list' },
+        },
+      }),
+      expect.any(Object),
+    )
+  })
+
   it('stores screen load errors without throwing', async () => {
     const store = createScreenStore({
       route: { path: '/broken' },
@@ -240,6 +275,88 @@ describe('@sdui-kit/core', () => {
     expect(validateSDUINode({ props: {} }).issues).toContainEqual({
       path: '$.componentName',
       message: 'componentName must be a non-empty string',
+    })
+  })
+
+  it('validates route manifests', () => {
+    expect(
+      validateSDUIRouteManifest({
+        schemaVersion: '1.0',
+        routes: [
+          {
+            id: 'applications.list',
+            path: '/applications',
+            screenId: 'applications.list',
+            title: 'Applications',
+          },
+          {
+            id: 'applications.details',
+            path: '/applications/:id',
+            screenId: 'applications.details',
+            params: {
+              id: { type: 'string', required: true },
+            },
+            metadata: { permission: 'applications.read' },
+            children: [
+              {
+                id: 'applications.details.documents',
+                path: 'documents',
+                screenId: 'applications.documents',
+              },
+            ],
+          },
+        ],
+      }).valid,
+    ).toBe(true)
+
+    expect(
+      validateSDUIRouteManifest({
+        schemaVersion: '1.0',
+        routes: [{ path: '' }],
+      }).issues,
+    ).toContainEqual({
+      path: '$.routes[0].id',
+      message: 'id must be a non-empty string',
+    })
+  })
+
+  it('validates redirect and not found screen responses', () => {
+    expect(
+      validateSDUIScreenResponse({
+        schemaVersion: '1.0',
+        status: 'redirect',
+        to: '/login',
+        replace: true,
+      }).valid,
+    ).toBe(true)
+
+    expect(
+      validateSDUIScreenResponse({
+        schemaVersion: '1.0',
+        status: 'notFound',
+        message: 'Missing screen',
+      }).valid,
+    ).toBe(true)
+
+    expect(
+      validateSDUIScreenResponse({
+        schemaVersion: '1.0',
+        status: 'redirect',
+      }).issues,
+    ).toContainEqual({
+      path: '$.to',
+      message: 'to must be a non-empty string for redirect responses',
+    })
+
+    expect(
+      validateSDUIScreenResponse({
+        schemaVersion: '1.0',
+        status: null,
+        node: { componentName: 'Text' },
+      }).issues,
+    ).toContainEqual({
+      path: '$.status',
+      message: 'status must be ok, redirect, or notFound when provided',
     })
   })
 })
