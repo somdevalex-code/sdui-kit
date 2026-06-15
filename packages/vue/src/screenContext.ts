@@ -15,11 +15,11 @@ import type {
   ScreenStoreAdapter,
 } from '@sdui-kit/core'
 
-import { SDUIProvider } from './context'
+import { SDUIProvider } from './context.js'
 import type {
   SDUIScreenStateRef,
   VueSDUIComponent,
-} from './types'
+} from './types.js'
 
 export const SDUIScreenContextKey: InjectionKey<ScreenStoreAdapter> =
   Symbol('SDUIScreenContext')

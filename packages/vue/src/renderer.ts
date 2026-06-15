@@ -15,9 +15,9 @@ import {
   isSDUINode,
 } from '@sdui-kit/core'
 
-import { useSDUI } from './context'
-import { DefaultFallbackComponent } from './registry'
-import type { SDUIRendererNode, VueSDUIComponent } from './types'
+import { useSDUI } from './context.js'
+import { DefaultFallbackComponent } from './registry.js'
+import type { SDUIRendererNode, VueSDUIComponent } from './types.js'
 
 type VueRawChildren = string | number | boolean | VNode | VNodeArrayChildren
 

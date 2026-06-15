@@ -2,6 +2,8 @@
   "name": "@sdui-kit/tanstack-query",
   "version": "0.1.0",
   "description": "TanStack Query adapter helpers for SDUI Kit.",
+  "license": "MIT",
+  "keywords": ["sdui", "server-driven-ui", "tanstack-query", "typescript"],
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.js",
@@ -15,6 +17,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",

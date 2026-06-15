@@ -17,7 +17,7 @@ import {
   FormTouched,
   FormValues,
   ServerErrors,
-} from './types'
+} from './types.js'
 
 export class FormStore {
   private readonly definition: FormDefinition

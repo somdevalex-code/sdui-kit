@@ -7,9 +7,9 @@ import {
   isSDUINode,
 } from '@sdui-kit/core'
 
-import { useSDUI } from './context'
-import { DefaultFallbackComponent } from './registry'
-import { SDUIRendererProps } from './types'
+import { useSDUI } from './context.js'
+import { DefaultFallbackComponent } from './registry.js'
+import { SDUIRendererProps } from './types.js'
 
 export function SDUIRenderer({ node, context = {} }: SDUIRendererProps) {
   const sdui = useSDUI()

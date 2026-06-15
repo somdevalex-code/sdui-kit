@@ -3,7 +3,7 @@ import {
   InvalidationTag,
   MaybePromise,
   RuntimeContext,
-} from './types'
+} from './types.js'
 
 export interface DataRequest {
   endpoint: string

@@ -11,9 +11,9 @@ import {
   isRenderableScreenResponse,
 } from '@sdui-kit/core'
 
-import { SDUIRenderer } from './renderer'
-import { useSDUIScreen, useSDUIScreenStore } from './screenContext'
-import type { VueRenderableFallback } from './types'
+import { SDUIRenderer } from './renderer.js'
+import { useSDUIScreen, useSDUIScreenStore } from './screenContext.js'
+import type { VueRenderableFallback } from './types.js'
 
 export const SDUIScreenRenderer = defineComponent({
   name: 'SDUIScreenRenderer',

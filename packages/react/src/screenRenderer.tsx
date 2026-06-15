@@ -5,9 +5,9 @@ import {
   isRenderableScreenResponse,
 } from '@sdui-kit/core'
 
-import { SDUIRenderer } from './renderer'
-import { useSDUIScreen, useSDUIScreenStore } from './screenContext'
-import { SDUIScreenRendererProps } from './types'
+import { SDUIRenderer } from './renderer.js'
+import { useSDUIScreen, useSDUIScreenStore } from './screenContext.js'
+import { SDUIScreenRendererProps } from './types.js'
 
 export function SDUIScreenRenderer({
   context = {},

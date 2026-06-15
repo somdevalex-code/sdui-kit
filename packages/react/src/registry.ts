@@ -1,7 +1,7 @@
 import React from 'react'
 import { createRegistry, type ComponentRegistryInput } from '@sdui-kit/core'
 
-import { ReactSDUIComponent } from './types'
+import { ReactSDUIComponent } from './types.js'
 
 export function createReactRegistry(
   entries?: ComponentRegistryInput<ReactSDUIComponent>,

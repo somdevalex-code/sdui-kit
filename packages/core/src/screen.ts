@@ -1,10 +1,10 @@
-import { CacheAdapter } from './adapters'
+import { CacheAdapter } from './adapters.js'
 import {
   InvalidationTag,
   MaybePromise,
   RuntimeContext,
   SDUINode,
-} from './types'
+} from './types.js'
 
 export interface RouteContext {
   path: string

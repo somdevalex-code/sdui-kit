@@ -8,7 +8,7 @@ import {
 } from 'vue'
 import type { ActionRunner, ComponentRegistry } from '@sdui-kit/core'
 
-import type { VueSDUIComponent, VueSDUIContextValue } from './types'
+import type { VueSDUIComponent, VueSDUIContextValue } from './types.js'
 
 export const SDUIContextKey: InjectionKey<VueSDUIContextValue> =
   Symbol('SDUIContext')

@@ -1,4 +1,4 @@
-import { RuntimeContext, isRecord } from './types'
+import { RuntimeContext, isRecord } from './types.js'
 
 export type ExpressionInput = unknown
 

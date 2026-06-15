@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { ScreenState, ScreenStoreAdapter } from '@sdui-kit/core'
 
-import { SDUIProvider } from './context'
-import { SDUIScreenProviderProps } from './types'
+import { SDUIProvider } from './context.js'
+import { SDUIScreenProviderProps } from './types.js'
 
 const SDUIScreenContext = createContext<ScreenStoreAdapter | null>(null)
 

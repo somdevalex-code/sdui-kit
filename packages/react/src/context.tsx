@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from 'react'
 
-import { ReactSDUIContextValue, SDUIProviderProps } from './types'
+import { ReactSDUIContextValue, SDUIProviderProps } from './types.js'
 
 const SDUIContext = createContext<ReactSDUIContextValue | null>(null)
 

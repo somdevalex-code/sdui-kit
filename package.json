@@ -1,6 +1,7 @@
 {
   "name": "sdui-kit-workspace",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@9.15.0",
@@ -8,6 +9,8 @@
     "build": "pnpm -r --filter './packages/**' build",
     "typecheck": "pnpm build && pnpm -r --filter './packages/**' typecheck",
     "test": "pnpm build && pnpm -r --filter './packages/**' test",
+    "smoke:packages": "node scripts/smoke-packages.mjs",
+    "release:check": "pnpm typecheck && pnpm test && pnpm --filter @sdui-kit/docs build && pnpm --filter @sdui-kit/react-basic typecheck && pnpm --filter @sdui-kit/react-basic build && pnpm smoke:packages",
     "docs:dev": "pnpm --filter @sdui-kit/docs dev",
     "example:react": "pnpm --filter @sdui-kit/react-basic dev"
   },

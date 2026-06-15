@@ -4,11 +4,11 @@ import {
   ValidationIssue,
   ValidationResult,
   isRecord,
-} from './types'
+} from './types.js'
 import {
   SDUIRouteManifest,
   SDUIScreenResponse,
-} from './screen'
+} from './screen.js'
 
 export function validateSDUINode(input: unknown): ValidationResult {
   const issues: ValidationIssue[] = []

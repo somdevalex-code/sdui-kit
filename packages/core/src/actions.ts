@@ -2,22 +2,22 @@ import {
   evaluateCondition,
   resolveValue,
   type ExpressionInput,
-} from './expressions'
+} from './expressions.js'
 import {
   MaybePromise,
   RuntimeContext,
   SDUINode,
   HttpMethod,
   isRecord,
-} from './types'
+} from './types.js'
 import {
   CacheAdapter,
   DataAdapter,
   DataRequest,
   NavigationAdapter,
   normalizeInvalidationTags,
-} from './adapters'
-import { ScreenStoreAdapter } from './screen'
+} from './adapters.js'
+import { ScreenStoreAdapter } from './screen.js'
 
 export interface ConfirmConfig {
   title: string

@@ -1,7 +1,7 @@
 import { defineComponent, h } from 'vue'
 import { createRegistry, type ComponentRegistryInput } from '@sdui-kit/core'
 
-import type { VueSDUIComponent } from './types'
+import type { VueSDUIComponent } from './types.js'
 
 export function createVueRegistry(
   entries?: ComponentRegistryInput<VueSDUIComponent>,
