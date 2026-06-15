@@ -2,9 +2,25 @@
 
 Install the core runtime and one UI adapter:
 
-```bash
+::: code-group
+
+```bash [npm]
+npm install @sdui-kit/core @sdui-kit/react
+```
+
+```bash [pnpm]
 pnpm add @sdui-kit/core @sdui-kit/react
 ```
+
+```bash [yarn]
+yarn add @sdui-kit/core @sdui-kit/react
+```
+
+```bash [bun]
+bun add @sdui-kit/core @sdui-kit/react
+```
+
+:::
 
 Register components from your application:
 

@@ -12,7 +12,7 @@ This workspace contains an MVP package split:
 - `examples/react-basic` - a small React/Vite integration example.
 - `docs` - VitePress documentation site with protocol and recipe examples.
 
-## Install
+## Local Development
 
 ```bash
 pnpm install

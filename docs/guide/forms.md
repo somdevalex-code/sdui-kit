@@ -2,9 +2,25 @@
 
 Forms are headless and live in `@sdui-kit/forms`.
 
-```bash
+::: code-group
+
+```bash [npm]
+npm install @sdui-kit/forms
+```
+
+```bash [pnpm]
 pnpm add @sdui-kit/forms
 ```
+
+```bash [yarn]
+yarn add @sdui-kit/forms
+```
+
+```bash [bun]
+bun add @sdui-kit/forms
+```
+
+:::
 
 Define form state through a JSON-compatible definition:
 
