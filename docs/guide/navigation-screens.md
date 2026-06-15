@@ -169,3 +169,64 @@ Backend may request navigation:
 ```
 
 `ActionRunner` delegates this to `NavigationAdapter.navigate`. `refreshScreen` should refresh the current `ScreenStore` state, not reload the browser page.
+
+Other navigation and screen actions use the same adapter boundary:
+
+```json
+{
+  "type": "goBack"
+}
+```
+
+```json
+{
+  "type": "refreshScreen"
+}
+```
+
+Use `refreshScreen` after mutations when the current route should stay in place but reload its SDUI response:
+
+```json
+{
+  "type": "request",
+  "endpoint": "/api/applications/42",
+  "method": "PATCH",
+  "body": {
+    "application": { "$from": "form.values" }
+  },
+  "invalidate": [{ "type": "Application", "id": "42" }],
+  "success": {
+    "type": "sequence",
+    "actions": [
+      {
+        "type": "toast",
+        "message": "Application updated",
+        "status": "success"
+      },
+      {
+        "type": "refreshScreen"
+      }
+    ]
+  }
+}
+```
+
+Use `navigate` when the mutation should move the user to another route:
+
+```json
+{
+  "type": "request",
+  "endpoint": "/api/applications",
+  "method": "POST",
+  "body": {
+    "application": { "$from": "form.values" }
+  },
+  "invalidate": ["ApplicationList"],
+  "success": {
+    "type": "navigate",
+    "to": "/applications"
+  }
+}
+```
+
+See [Action Flows](../recipes/actions.md) for larger multi-step examples.

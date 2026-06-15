@@ -84,18 +84,108 @@ const registry = createVueRegistry({
 
 :::
 
-## Runtime-Aware Components
-
-Most components should stay unaware of SDUI. For advanced components, use adapter hooks:
+Wrappers are also the right place to adapt backend naming to a design-system component. If the backend sends `props.action`, React and Vue adapters create `onClick`; the wrapper can pass it through like any other event prop.
 
 ::: code-group
 
 ```tsx [React]
-import { useSDUIAction } from '@sdui-kit/react'
+const registry = createReactRegistry({
+  primaryButton: ({ label, ...props }) => (
+    <Button {...props} tone="brand">
+      {label}
+    </Button>
+  ),
+})
 ```
 
 ```ts [Vue]
+import { defineComponent, h } from 'vue'
+
+const PrimaryButtonAdapter = defineComponent({
+  props: {
+    label: { type: String, required: true },
+  },
+  setup(props, { attrs }) {
+    return () =>
+      h(Button, { ...attrs, tone: 'brand' }, () => props.label)
+  },
+})
+
+const registry = createVueRegistry({
+  primaryButton: PrimaryButtonAdapter,
+})
+```
+
+:::
+
+## Runtime-Aware Components
+
+Most components should stay unaware of SDUI. A normal clickable component can use `props.action` in the payload and let the framework adapter wire `onClick` automatically:
+
+```json
+{
+  "componentName": "primaryButton",
+  "props": {
+    "label": "Submit",
+    "action": {
+      "type": "request",
+      "endpoint": "/api/applications",
+      "method": "POST",
+      "body": { "$from": "form.values" }
+    }
+  }
+}
+```
+
+For advanced components that need to run actions from another prop or event, use adapter hooks. Use a prop name other than `action` when the component itself needs to receive the action object, because `props.action` is reserved for automatic click wiring.
+
+::: code-group
+
+```tsx [React]
+import type { SDUIAction } from '@sdui-kit/core'
+import { useSDUIAction } from '@sdui-kit/react'
+
+function MenuItem({
+  label,
+  selectAction,
+}: {
+  label: string
+  selectAction: SDUIAction
+}) {
+  const runAction = useSDUIAction()
+
+  return <button onClick={() => runAction(selectAction)}>{label}</button>
+}
+
+const registry = createReactRegistry({
+  menuItem: MenuItem,
+})
+```
+
+```ts [Vue]
+import type { SDUIAction } from '@sdui-kit/core'
+import { defineComponent, h, type PropType } from 'vue'
 import { useSDUIAction } from '@sdui-kit/vue'
+
+const MenuItem = defineComponent({
+  props: {
+    label: { type: String, required: true },
+    selectAction: {
+      type: Object as PropType<SDUIAction>,
+      required: true,
+    },
+  },
+  setup(props) {
+    const runAction = useSDUIAction()
+
+    return () =>
+      h('button', { onClick: () => runAction(props.selectAction) }, props.label)
+  },
+})
+
+const registry = createVueRegistry({
+  menuItem: MenuItem,
+})
 ```
 
 :::
@@ -123,3 +213,5 @@ const registry = createVueRegistry({
 ```
 
 :::
+
+Injected runtime props include `componentName`, `sduiNode`, `runAction`, and `renderNode`. This is useful for layout, editor, analytics, or shell components that need to inspect or render nested SDUI nodes directly.

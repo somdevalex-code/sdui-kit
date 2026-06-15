@@ -19,13 +19,36 @@ const actionRunner = new ActionRunner({
   }),
 
   confirm: (config) => confirmDialog.open(config),
+
+  modal: {
+    open: (action, context) => modal.open({
+      centered: action.centered,
+      content: renderSDUI(action.children, context),
+    }),
+    close: () => modal.close(),
+  },
+
+  drawer: {
+    open: (action) => drawer.open(action.drawerId, action.payload),
+    close: (action) => {
+      if (action.drawerId) {
+        drawer.close(action.drawerId)
+        return
+      }
+
+      drawer.closeCurrent()
+    },
+  },
 })
 ```
+
+`renderSDUI`, `modal`, and `drawer` in this example are app-owned helpers. The core package only calls adapter methods with `openModal`, `closeModal`, `drawerOpen`, and `drawerClose` action objects.
 
 For larger apps, split adapters by concern:
 
 - [Navigation & Screens](./navigation-screens.md) for route context and screen loading.
 - [Data & Cache Adapters](./data-cache-adapters.md) for requests, invalidation and screen stores.
+- [Modals & Drawers](../recipes/modals-drawers.md) for overlay action flows.
 - [Vue](../integrations/vue.md), [Vue Router](../integrations/vue-router.md), [TanStack Query](../integrations/tanstack-query.md), [TanStack Router](../integrations/tanstack-router.md), [React Router](../integrations/react-router.md), [Next App Router](../integrations/next.md), [Browser History](../integrations/browser-history.md) and [RTK Query](../integrations/rtk-query.md) for integration patterns.
 
 To support another framework, implement a renderer that:

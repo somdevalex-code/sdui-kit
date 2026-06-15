@@ -23,6 +23,71 @@ Fields:
 - `children` can live in `props.children` or as a top-level `children` field.
 - `metadata` is available for analytics, experiments or debugging.
 
+Keep the boundary clear:
+
+- Put renderable component inputs in `props`.
+- Put child nodes in `children` or `props.children`.
+- Put behavior in `props.action` when the component should trigger an SDUI action.
+- Put non-rendering diagnostics, experiment flags, permissions hints, or analytics labels in `metadata`.
+
+## Action Payloads
+
+Actions are regular props. React and Vue adapters map `props.action` to a click handler for components that do not already provide `onClick`, then pass the action to `ActionRunner`.
+
+```json
+{
+  "componentName": "Button",
+  "props": {
+    "children": "Open details",
+    "action": {
+      "type": "navigate",
+      "to": "/applications/42",
+      "query": { "tab": "summary" }
+    }
+  },
+  "metadata": {
+    "analyticsKey": "applications.openDetails"
+  }
+}
+```
+
+Nested children can carry their own actions:
+
+```json
+{
+  "componentName": "Card",
+  "props": {
+    "title": "Application #42"
+  },
+  "children": [
+    {
+      "componentName": "Text",
+      "props": {
+        "children": "Ready for review"
+      }
+    },
+    {
+      "componentName": "Button",
+      "props": {
+        "children": "Approve",
+        "action": {
+          "type": "request",
+          "endpoint": "/api/applications/42/approve",
+          "method": "POST",
+          "invalidate": [{ "type": "Application", "id": "42" }],
+          "success": {
+            "type": "refreshScreen"
+          }
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "experiment": "application-card-v2"
+  }
+}
+```
+
 ## Passing Props
 
 Backend sends props inside the `props` object:
