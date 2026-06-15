@@ -67,6 +67,67 @@ Vue children are rendered as the component default slot. A registered component 
 
 If `props.action` is present, the adapter maps it to `onClick` and does not forward the raw `action` prop.
 
+## Invoking Actions
+
+For simple click actions, register components that pass click listeners to an interactive element:
+
+```vue
+<template>
+  <button>
+    <slot />
+    {{ children }}
+  </button>
+</template>
+
+<script setup lang="ts">
+defineProps<{
+  children?: string
+}>()
+</script>
+```
+
+Then the backend can attach `props.action`:
+
+```json
+{
+  "componentName": "AppButton",
+  "props": {
+    "children": "Save",
+    "action": {
+      "type": "toast",
+      "message": "Saved",
+      "status": "success"
+    }
+  }
+}
+```
+
+For non-click events or action props with another name, call the runner through `useSDUIAction()`:
+
+```ts
+import type { SDUIAction } from '@sdui-kit/core'
+import { defineComponent, h, type PropType } from 'vue'
+import { useSDUIAction } from '@sdui-kit/vue'
+
+const MenuItem = defineComponent({
+  props: {
+    label: { type: String, required: true },
+    selectAction: {
+      type: Object as PropType<SDUIAction>,
+      required: true,
+    },
+  },
+  setup(props) {
+    const runAction = useSDUIAction()
+
+    return () =>
+      h('button', { onClick: () => runAction(props.selectAction) }, props.label)
+  },
+})
+```
+
+See [Actions](../guide/actions.md) for vanilla `ActionRunner.run(...)` usage and [Component Registry](../guide/registry.md) for runtime injection tradeoffs.
+
 ## Runtime Injection
 
 Components receive only backend props and slots by default. Opt in to runtime props for advanced components:

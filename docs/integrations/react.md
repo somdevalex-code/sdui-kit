@@ -57,6 +57,53 @@ export function App() {
 
 React children are rendered as `children`. If `props.action` is present, the adapter maps it to `onClick` and does not forward the raw `action` prop.
 
+## Invoking Actions
+
+For simple click actions, register components that pass `onClick` to an interactive element:
+
+```tsx
+function AppButton({ children, ...props }) {
+  return <button {...props}>{children}</button>
+}
+```
+
+Then the backend can attach `props.action`:
+
+```json
+{
+  "componentName": "AppButton",
+  "props": {
+    "children": "Save",
+    "action": {
+      "type": "toast",
+      "message": "Saved",
+      "status": "success"
+    }
+  }
+}
+```
+
+For non-click events or action props with another name, call the runner through `useSDUIAction()`:
+
+```tsx
+import type { SDUIAction } from '@sdui-kit/core'
+import { useSDUIAction } from '@sdui-kit/react'
+
+function MenuItem({
+  label,
+  selectAction,
+}: {
+  label: string
+  selectAction: SDUIAction
+}) {
+  const runAction = useSDUIAction()
+
+  return <button onClick={() => runAction(selectAction)}>{label}</button>
+}
+```
+
+See [Actions](../guide/actions.md) for vanilla `ActionRunner.run(...)` usage and [Component Registry](../guide/registry.md) for runtime injection tradeoffs.
+
 ## Runtime Injection
 
 Components receive only backend props and rendered children by default. Opt in to runtime props for advanced components:

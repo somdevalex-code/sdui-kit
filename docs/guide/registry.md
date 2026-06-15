@@ -190,23 +190,75 @@ const registry = createVueRegistry({
 
 :::
 
-Only opt into injected runtime props when a component really needs them:
+## Runtime Injection
+
+Registered components can also receive runtime helpers directly, but this is opt-in per registration. Use it for components that are intentionally SDUI-aware: shells, menus, editors, compound widgets, analytics wrappers, or components that need to render nested SDUI nodes themselves.
 
 ::: code-group
 
 ```tsx [React]
+import type { SDUIAction } from '@sdui-kit/core'
+import type { SDUIInjectedProps } from '@sdui-kit/react'
+
+function ActionMenu({
+  items,
+  runAction,
+}: SDUIInjectedProps & {
+  items: Array<{ label: string; action: SDUIAction }>
+}) {
+  return (
+    <div role="menu">
+      {items.map((item) => (
+        <button key={item.label} onClick={() => runAction(item.action)}>
+          {item.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 const registry = createReactRegistry({
-  AdvancedWidget: {
-    component: AdvancedWidget,
+  actionMenu: {
+    component: ActionMenu,
     metadata: { injectRuntime: true },
   },
 })
 ```
 
 ```ts [Vue]
+import type { SDUIAction } from '@sdui-kit/core'
+import type { SDUIInjectedProps } from '@sdui-kit/vue'
+import { defineComponent, h, type PropType } from 'vue'
+
+const ActionMenu = defineComponent({
+  props: {
+    items: {
+      type: Array as PropType<Array<{ label: string; action: SDUIAction }>>,
+      required: true,
+    },
+    runAction: {
+      type: Function as PropType<SDUIInjectedProps['runAction']>,
+      required: true,
+    },
+  },
+  setup(props) {
+    return () =>
+      h(
+        'div',
+        { role: 'menu' },
+        props.items.map((item) =>
+          h('button', {
+            key: item.label,
+            onClick: () => props.runAction(item.action),
+          }, item.label),
+        ),
+      )
+  },
+})
+
 const registry = createVueRegistry({
-  AdvancedWidget: {
-    component: AdvancedWidget,
+  actionMenu: {
+    component: ActionMenu,
     metadata: { injectRuntime: true },
   },
 })
@@ -215,3 +267,25 @@ const registry = createVueRegistry({
 :::
 
 Injected runtime props include `componentName`, `sduiNode`, `runAction`, and `renderNode`. This is useful for layout, editor, analytics, or shell components that need to inspect or render nested SDUI nodes directly.
+
+There is intentionally no global default that injects runtime props into every registered component. You can wrap multiple registrations with a local helper when a set of components is built specifically for SDUI:
+
+```tsx
+import type { ReactSDUIComponent } from '@sdui-kit/react'
+
+const withRuntime = (component: ReactSDUIComponent) => ({
+  component,
+  metadata: { injectRuntime: true },
+})
+
+const registry = createReactRegistry({
+  actionMenu: withRuntime(ActionMenu),
+  sduiTabs: withRuntime(SDUITabs),
+})
+```
+
+Avoid using that pattern for ordinary design-system primitives such as `Button`, `Card`, `Text`, or `Badge`. Passing SDUI runtime into everything couples those components to SDUI, increases prop collision risk, and makes reuse outside the SDUI renderer harder. Prefer this order:
+
+1. Use `props.action` for simple click actions.
+2. Use `useSDUIAction()` for framework components that need a custom event.
+3. Use `metadata: { injectRuntime: true }` for components that are deliberately SDUI-aware.

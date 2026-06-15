@@ -10,6 +10,156 @@ Core does not import a router, data library, toast package, modal package, or UI
 - `ActionRunner` evaluates `when`, asks for `confirm`, resolves request values, runs `sequence` actions in order, and routes built-ins to adapters.
 - Adapters are the app boundary. They decide how to call HTTP clients, routers, cache libraries, notification systems, modal systems, and drawer systems.
 
+## How Actions Are Invoked
+
+Actions only run when something calls `ActionRunner.run(action, context)`.
+
+React and Vue adapters do this automatically for the common clickable case. When a rendered SDUI node has `props.action`, the framework renderer creates an `onClick` handler for the registered component and does not forward the raw `action` prop.
+
+::: code-group
+
+```tsx [React]
+const registry = createReactRegistry({
+  Button: (props) => <button {...props} />,
+})
+
+const node = {
+  componentName: 'Button',
+  props: {
+    children: 'Save',
+    action: {
+      type: 'toast',
+      message: 'Saved',
+      status: 'success',
+    },
+  },
+}
+
+function App() {
+  return (
+    <SDUIProvider registry={registry} actionRunner={actionRunner}>
+      <SDUIRenderer node={node} />
+    </SDUIProvider>
+  )
+}
+```
+
+```vue [Vue]
+<script setup lang="ts">
+const registry = createVueRegistry({
+  Button: {
+    props: ['children'],
+    template: '<button><slot />{{ children }}</button>',
+  },
+})
+
+const node = {
+  componentName: 'Button',
+  props: {
+    children: 'Save',
+    action: {
+      type: 'toast',
+      message: 'Saved',
+      status: 'success',
+    },
+  },
+}
+</script>
+
+<template>
+  <SDUIProvider :registry="registry" :action-runner="actionRunner">
+    <SDUIRenderer :node="node" />
+  </SDUIProvider>
+</template>
+```
+
+:::
+
+The registered component must pass the received click handler to an interactive element. If a component ignores `onClick`, the action is configured correctly but nothing will trigger it.
+
+For non-click events or action props with another name, call the runner from framework hooks:
+
+::: code-group
+
+```tsx [React]
+import type { SDUIAction } from '@sdui-kit/core'
+import { useSDUIAction } from '@sdui-kit/react'
+
+function MenuItem({
+  label,
+  selectAction,
+}: {
+  label: string
+  selectAction: SDUIAction
+}) {
+  const runAction = useSDUIAction()
+
+  return <button onClick={() => runAction(selectAction)}>{label}</button>
+}
+```
+
+```ts [Vue]
+import type { SDUIAction } from '@sdui-kit/core'
+import { defineComponent, h, type PropType } from 'vue'
+import { useSDUIAction } from '@sdui-kit/vue'
+
+const MenuItem = defineComponent({
+  props: {
+    label: { type: String, required: true },
+    selectAction: {
+      type: Object as PropType<SDUIAction>,
+      required: true,
+    },
+  },
+  setup(props) {
+    const runAction = useSDUIAction()
+
+    return () =>
+      h('button', { onClick: () => runAction(props.selectAction) }, props.label)
+  },
+})
+```
+
+:::
+
+With vanilla JavaScript, there is no framework renderer wiring. Create an `ActionRunner` and call it from the event listener yourself:
+
+```ts
+const actionRunner = new ActionRunner({
+  toast: (action) => {
+    window.alert(action.message)
+  },
+  request: ({ endpoint, method, body }) =>
+    fetch(endpoint, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: method === 'GET' ? undefined : JSON.stringify(body),
+    }),
+})
+
+button.addEventListener('click', (event) => {
+  void actionRunner.run(
+    {
+      type: 'sequence',
+      actions: [
+        {
+          type: 'request',
+          endpoint: '/api/applications',
+          method: 'POST',
+          body: { status: 'submitted' },
+        },
+        {
+          type: 'toast',
+          message: 'Application submitted',
+          status: 'success',
+        },
+      ],
+    },
+    { event },
+  )
+})
+```
+
 ## Submit, Invalidate, Refresh, Navigate
 
 Use `request` for the mutation and put follow-up UI in `success`. Cache invalidation runs after the request resolves and before the success action runs.
