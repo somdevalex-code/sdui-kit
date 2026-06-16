@@ -19,6 +19,26 @@ Then use the matching adapter page:
 - [React Adapter](../integrations/react.md)
 - [Vue Adapter](../integrations/vue.md)
 
+## Optional Packages
+
+Install extra packages only for the integrations your app uses:
+
+| Package | Use when |
+| --- | --- |
+| `@sdui-kit/forms` | You need headless form state, validation, conditional fields and submit actions. |
+| `@sdui-kit/browser-history` | You want browser `history` route parsing or navigation without a framework router. |
+| `@sdui-kit/next` | You use Next App Router. |
+| `@sdui-kit/react-router` | You use React Router. |
+| `@sdui-kit/vue-router` | You use Vue Router. |
+| `@sdui-kit/tanstack-router` | You use TanStack Router. |
+| `@sdui-kit/tanstack-query` | You want TanStack Query cache/request adapter helpers. |
+
+For example:
+
+```bash
+pnpm add @sdui-kit/core @sdui-kit/react @sdui-kit/react-router react-router-dom
+```
+
 The backend payload is the same for every framework:
 
 ```ts

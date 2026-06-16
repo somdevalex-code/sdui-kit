@@ -2,6 +2,14 @@
 
 Use `@sdui-kit/vue` when a Vue 3 app should render the same framework-neutral SDUI payloads as other adapters.
 
+## Install
+
+```bash
+pnpm add @sdui-kit/core @sdui-kit/vue
+```
+
+`@sdui-kit/vue` expects Vue 3 to be installed by the host app.
+
 ## Registry And Renderer
 
 Register app-owned Vue components, create an `ActionRunner`, and render the node through `SDUIProvider` and `SDUIRenderer`:

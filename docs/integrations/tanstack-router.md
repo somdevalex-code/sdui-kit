@@ -2,6 +2,15 @@
 
 TanStack Router should stay outside core. Use `@sdui-kit/tanstack-router` to convert router state into `RouteContext` and keep screen loading in `ScreenStore`.
 
+## Install
+
+```bash
+pnpm add @sdui-kit/core @sdui-kit/react @sdui-kit/tanstack-router @tanstack/react-router
+```
+
+Use `@sdui-kit/tanstack-router` with the renderer package for your UI framework.
+The command above shows the React path.
+
 ## Catch-All Boundary
 
 Declare a catch-all route in the host app and render the SDUI screen boundary from that route.

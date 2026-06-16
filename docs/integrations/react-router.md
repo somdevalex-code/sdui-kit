@@ -2,6 +2,14 @@
 
 React Router should be connected through adapter helpers. Neither `@sdui-kit/core` nor `@sdui-kit/react` should import `react-router-dom`.
 
+## Install
+
+```bash
+pnpm add @sdui-kit/core @sdui-kit/react @sdui-kit/react-router react-router-dom
+```
+
+Use `@sdui-kit/react-router` with the React renderer from `@sdui-kit/react`.
+
 ## Catch-All Boundary
 
 Declare a host-owned catch-all route such as `/app/*`. The boundary component reads React Router state, converts it into `RouteContext`, and asks `ScreenStore` to load the backend screen.

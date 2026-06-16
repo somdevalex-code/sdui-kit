@@ -2,6 +2,15 @@
 
 TanStack Query is an optional advanced integration. Use it when the app needs query keys, cancellation, refetch, and invalidation around SDUI screens or request actions. For small apps, a simple `request` executor is enough.
 
+## Install
+
+```bash
+pnpm add @sdui-kit/core @sdui-kit/tanstack-query @tanstack/query-core
+```
+
+Install your UI adapter separately, for example `@sdui-kit/react` or
+`@sdui-kit/vue`.
+
 ## Adapter Shape
 
 Keep TanStack imports in the app or `@sdui-kit/tanstack-query`, not in core. Request execution can still be a plain function:

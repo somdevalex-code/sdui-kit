@@ -2,6 +2,15 @@
 
 Browser history support belongs in an adapter or app shell. Core should not require browser globals, which keeps it usable in SSR, native, workers, tests, and non-browser runtimes.
 
+## Install
+
+```bash
+pnpm add @sdui-kit/core @sdui-kit/browser-history
+```
+
+Install a renderer package separately when the app also renders SDUI screens,
+for example `@sdui-kit/react` or `@sdui-kit/vue`.
+
 ## NavigationAdapter
 
 A browser adapter can wrap `history.pushState` and `history.replaceState`:

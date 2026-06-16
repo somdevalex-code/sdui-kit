@@ -2,6 +2,14 @@
 
 Use `@sdui-kit/react` when a React app should render framework-neutral SDUI payloads with app-owned components.
 
+## Install
+
+```bash
+pnpm add @sdui-kit/core @sdui-kit/react
+```
+
+`@sdui-kit/react` expects React to be installed by the host app.
+
 ## Registry And Renderer
 
 Register React components, create an `ActionRunner`, and render the node through `SDUIProvider` and `SDUIRenderer`:

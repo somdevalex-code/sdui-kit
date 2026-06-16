@@ -2,6 +2,10 @@
 
 RTK Query can power SDUI requests and invalidation, but it should stay outside core. For many apps, the simplest bridge is a plain `request` executor; use `DataAdapter` and `CacheAdapter` only when you need reusable integration.
 
+There is no separate `@sdui-kit/rtk-query` package. Install `@sdui-kit/core`
+and the renderer package your app uses, then keep RTK Query wiring in the host
+app.
+
 ## Simple Request Executor
 
 ```ts

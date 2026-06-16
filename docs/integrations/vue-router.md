@@ -2,6 +2,14 @@
 
 Vue Router should be connected through adapter helpers. Neither `@sdui-kit/core` nor `@sdui-kit/vue` should import `vue-router`.
 
+## Install
+
+```bash
+pnpm add @sdui-kit/core @sdui-kit/vue @sdui-kit/vue-router vue-router
+```
+
+Use `@sdui-kit/vue-router` with the Vue renderer from `@sdui-kit/vue`.
+
 ## Catch-All Boundary
 
 Declare a host-owned catch-all route and load SDUI screens from that boundary:

@@ -2,6 +2,14 @@
 
 Next App Router should be connected through a `NavigationAdapter`. Neither `@sdui-kit/core` nor `@sdui-kit/react` should import `next/navigation`.
 
+## Install
+
+```bash
+pnpm add @sdui-kit/core @sdui-kit/react @sdui-kit/next
+```
+
+`@sdui-kit/next` expects Next to be installed by the host app.
+
 ## Navigation Adapter
 
 Create the adapter inside a client component that can access Next hooks:
