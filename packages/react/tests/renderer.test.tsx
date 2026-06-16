@@ -9,6 +9,7 @@ import {
   SDUIScreenProvider,
   SDUIScreenRenderer,
   createReactRegistry,
+  useSDUIAction,
 } from '../src'
 
 describe('@sdui-kit/react', () => {
@@ -137,6 +138,176 @@ describe('@sdui-kit/react', () => {
 
     expect(html).toContain('<section>')
     expect(html).toContain('Hello SDUI')
+  })
+
+  it('renders default and custom fallbacks for unknown components', () => {
+    const defaultHtml = renderToStaticMarkup(
+      <SDUIProvider
+        registry={createReactRegistry({})}
+        actionRunner={new ActionRunner()}
+      >
+        <SDUIRenderer node={{ componentName: 'MissingWidget' }} />
+      </SDUIProvider>,
+    )
+    const customHtml = renderToStaticMarkup(
+      <SDUIProvider
+        registry={createReactRegistry({})}
+        actionRunner={new ActionRunner()}
+        fallbackComponent={({ componentName }) =>
+          React.createElement('aside', null, `Fallback ${String(componentName)}`)
+        }
+      >
+        <SDUIRenderer node={{ componentName: 'CustomMissing' }} />
+      </SDUIProvider>,
+    )
+
+    expect(defaultHtml).toContain('Unknown SDUI component: MissingWidget')
+    expect(defaultHtml).toContain('data-sdui-missing-component')
+    expect(customHtml).toContain('<aside>Fallback CustomMissing</aside>')
+  })
+
+  it('injects runtime helpers only when component metadata requests them', async () => {
+    let injectedProps: Record<string, unknown> = {}
+    const custom = vi.fn()
+    const registry = createReactRegistry({
+      RuntimeCard: {
+        component: (props: Record<string, unknown>) => {
+          injectedProps = props
+          return React.createElement(
+            'section',
+            null,
+            props.renderNode
+              ? (props.renderNode as (node: unknown) => React.ReactNode)({
+                  componentName: 'Text',
+                  props: { children: 'Rendered child' },
+                })
+              : null,
+          )
+        },
+        metadata: { injectRuntime: true },
+      },
+      Text: ({ children }) => React.createElement('span', null, children),
+    })
+    const node = {
+      componentName: 'RuntimeCard',
+      props: { label: 'Inspect' },
+    }
+
+    const html = renderToStaticMarkup(
+      <SDUIProvider
+        registry={registry}
+        actionRunner={new ActionRunner({ custom: { inspect: custom } })}
+      >
+        <SDUIRenderer node={node} context={{ data: { id: 1 } }} />
+      </SDUIProvider>,
+    )
+
+    await (injectedProps.runAction as (action: unknown) => Promise<unknown>)({
+      type: 'inspect',
+    })
+
+    expect(html).toContain('Rendered child')
+    expect(injectedProps).toMatchObject({
+      componentName: 'RuntimeCard',
+      sduiNode: node,
+    })
+    expect(custom).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'inspect' }),
+      expect.objectContaining({
+        data: { id: 1 },
+        node,
+      }),
+      expect.any(ActionRunner),
+    )
+  })
+
+  it('preserves explicit onClick props over SDUI actions', () => {
+    let buttonProps: Record<string, unknown> = {}
+    const explicitOnClick = vi.fn()
+    const inspect = vi.fn()
+    const registry = createReactRegistry({
+      Button: (props: Record<string, unknown>) => {
+        buttonProps = props
+        return React.createElement('button', null, 'Save')
+      },
+    })
+
+    renderToStaticMarkup(
+      <SDUIProvider
+        registry={registry}
+        actionRunner={new ActionRunner({ custom: { inspect } })}
+      >
+        <SDUIRenderer
+          node={{
+            componentName: 'Button',
+            props: {
+              onClick: explicitOnClick,
+              action: { type: 'inspect' },
+            },
+          }}
+        />
+      </SDUIProvider>,
+    )
+
+    ;(buttonProps.onClick as () => void)()
+
+    expect(explicitOnClick).toHaveBeenCalled()
+    expect(inspect).not.toHaveBeenCalled()
+  })
+
+  it('renders nested SDUI nodes passed through arbitrary props', () => {
+    const registry = createReactRegistry({
+      Text: ({ children }) => React.createElement('span', null, children),
+      Card: ({ accessory }: { accessory?: React.ReactNode }) =>
+        React.createElement('article', null, accessory),
+    })
+
+    const html = renderToStaticMarkup(
+      <SDUIProvider registry={registry} actionRunner={new ActionRunner()}>
+        <SDUIRenderer
+          node={{
+            componentName: 'Card',
+            props: {
+              accessory: {
+                componentName: 'Text',
+                props: { children: 'Nested accessory' },
+              },
+            },
+          }}
+        />
+      </SDUIProvider>,
+    )
+
+    expect(html).toContain('<article><span>Nested accessory</span></article>')
+  })
+
+  it('runs actions through useSDUIAction and errors outside the provider', async () => {
+    let runAction!: ReturnType<typeof useSDUIAction>
+    const inspect = vi.fn()
+    const HookConsumer = () => {
+      runAction = useSDUIAction()
+      return React.createElement('div', null, 'Ready')
+    }
+
+    renderToStaticMarkup(
+      <SDUIProvider
+        registry={createReactRegistry({})}
+        actionRunner={new ActionRunner({ custom: { inspect } })}
+      >
+        <HookConsumer />
+      </SDUIProvider>,
+    )
+
+    await runAction({ type: 'inspect' }, { data: { id: 1 } })
+
+    expect(inspect).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'inspect' }),
+      expect.objectContaining({ data: { id: 1 } }),
+      expect.any(ActionRunner),
+    )
+    expect(() => renderToStaticMarkup(<HookConsumer />)).toThrow(
+      'useSDUI must be used inside SDUIProvider',
+    )
   })
 
   it('renders loaded screens through the screen renderer', () => {

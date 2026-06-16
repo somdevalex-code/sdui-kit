@@ -3,10 +3,14 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   ActionRunner,
   collectUnknownComponents,
+  ComponentRegistry,
   createRequestAdapter,
+  createRegistry,
   createScreenStore,
   evaluateCondition,
+  getPath,
   resolveExpression,
+  resolveValue,
   type SDUIScreenResponse,
   validateSDUIRouteManifest,
   validateSDUINode,
@@ -14,6 +18,45 @@ import {
 } from '../src'
 
 describe('@sdui-kit/core', () => {
+  it('registers components with metadata and merges registries', () => {
+    const text = Symbol('text')
+    const button = Symbol('button')
+    const registry = createRegistry({
+      Text: {
+        component: text,
+        metadata: { injectRuntime: true },
+      },
+    })
+    const extra = new ComponentRegistry({
+      Button: button,
+    })
+
+    registry.register('Badge', Symbol('badge')).merge(extra)
+
+    expect(registry.has('Text')).toBe(true)
+    expect(registry.require('Text')).toEqual({
+      component: text,
+      metadata: { injectRuntime: true },
+    })
+    expect(registry.get('Button')?.component).toBe(button)
+    expect(registry.entries().map(([name]) => name)).toEqual([
+      'Text',
+      'Badge',
+      'Button',
+    ])
+  })
+
+  it('throws useful registry errors for invalid component names', () => {
+    const registry = createRegistry()
+
+    expect(() => registry.register(' ', Symbol('empty'))).toThrow(
+      'SDUI component name must be a non-empty string',
+    )
+    expect(() => registry.require('Missing')).toThrow(
+      'SDUI component "Missing" is not registered',
+    )
+  })
+
   it('resolves expressions against runtime context', () => {
     expect(
       resolveExpression(
@@ -28,6 +71,67 @@ describe('@sdui-kit/core', () => {
         { user: { roles: ['admin'] } },
       ),
     ).toBe(true)
+  })
+
+  it('resolves values and object expressions recursively', () => {
+    const context = {
+      form: {
+        values: {
+          age: '42',
+          tags: ['vip', 'new'],
+          profile: { name: 'Ada' },
+        },
+      },
+    }
+
+    expect(
+      resolveValue(
+        {
+          name: { $from: 'form.values.profile.name' },
+          isAdult: { $expr: { gte: [{ var: 'form.values.age' }, 18] } },
+          tags: [{ $from: 'form.values.tags[0]' }],
+        },
+        context,
+      ),
+    ).toEqual({
+      name: 'Ada',
+      isAdult: true,
+      tags: ['vip'],
+    })
+    expect(
+      resolveExpression(
+        {
+          fallback: { var: 'form.values.missing', fallback: 'n/a' },
+          literal: { nested: [{ var: 'form.values.profile.name' }] },
+        },
+        context,
+      ),
+    ).toEqual({
+      fallback: 'n/a',
+      literal: { nested: ['Ada'] },
+    })
+  })
+
+  it('evaluates expression operators and paths', () => {
+    const context = {
+      items: [{ count: 2 }, { count: 5 }],
+      title: 'Server driven UI',
+      emptyObject: {},
+    }
+
+    expect(getPath(context, '')).toBe(context)
+    expect(getPath(context, 'items[1].count')).toBe(5)
+    expect(getPath(context, 'items.0.count')).toBe(2)
+    expect(getPath('text', 'length')).toBeUndefined()
+    expect(resolveExpression({ gt: [{ var: 'items[1].count' }, 4] }, context)).toBe(true)
+    expect(resolveExpression({ lt: [{ var: 'items[0].count' }, 1] }, context)).toBe(false)
+    expect(resolveExpression({ lte: ['not-number', 1] }, context)).toBe(false)
+    expect(resolveExpression({ neq: [{ var: 'items[0].count' }, 5] }, context)).toBe(true)
+    expect(resolveExpression({ or: [false, { includes: [{ var: 'title' }, 'driven'] }] }, context)).toBe(true)
+    expect(resolveExpression({ includes: [{ var: 'items' }, { count: 2 }] }, context)).toBe(false)
+    expect(resolveExpression({ empty: { var: 'emptyObject' } }, context)).toBe(true)
+    expect(resolveExpression({ notEmpty: { var: 'items' } }, context)).toBe(true)
+    expect(evaluateCondition(undefined, context, false)).toBe(false)
   })
 
   it('runs request actions with resolved payload and success action', async () => {
@@ -629,6 +733,86 @@ describe('@sdui-kit/core', () => {
     })
   })
 
+  it('reports detailed route manifest issues', () => {
+    expect(
+      validateSDUIRouteManifest({
+        schemaVersion: '',
+        routes: [
+          {
+            id: 'details',
+            path: '/details/:id',
+            screenId: '',
+            title: 123,
+            params: {
+              id: {
+                type: 'uuid',
+                required: 'yes',
+                description: 42,
+                metadata: 'invalid',
+              },
+              slug: 'bad',
+            },
+            metadata: null,
+            children: [
+              {
+                id: '',
+                path: '',
+              },
+            ],
+          },
+        ],
+        metadata: 'invalid',
+      }).issues,
+    ).toEqual(
+      expect.arrayContaining([
+        {
+          path: '$.schemaVersion',
+          message: 'schemaVersion must be a non-empty string',
+        },
+        {
+          path: '$.routes[0].screenId',
+          message: 'screenId must be a non-empty string',
+        },
+        {
+          path: '$.routes[0].title',
+          message: 'title must be a string',
+        },
+        {
+          path: '$.routes[0].params.id.type',
+          message: 'type must be string, number, or boolean',
+        },
+        {
+          path: '$.routes[0].params.id.required',
+          message: 'required must be a boolean',
+        },
+        {
+          path: '$.routes[0].params.id.description',
+          message: 'description must be a string',
+        },
+        {
+          path: '$.routes[0].params.id.metadata',
+          message: 'metadata must be an object',
+        },
+        {
+          path: '$.routes[0].params.slug',
+          message: 'route params must be definition objects',
+        },
+        {
+          path: '$.routes[0].metadata',
+          message: 'metadata must be an object',
+        },
+        {
+          path: '$.routes[0].children[0].id',
+          message: 'id must be a non-empty string',
+        },
+        {
+          path: '$.metadata',
+          message: 'metadata must be an object',
+        },
+      ]),
+    )
+  })
+
   it('validates redirect and not found screen responses', () => {
     expect(
       validateSDUIScreenResponse({
@@ -667,6 +851,86 @@ describe('@sdui-kit/core', () => {
       path: '$.status',
       message: 'status must be ok, redirect, or notFound when provided',
     })
+  })
+
+  it('reports detailed screen response issues', () => {
+    expect(validateSDUIScreenResponse(null).issues).toEqual([
+      { path: '$', message: 'Screen response must be an object' },
+    ])
+    expect(
+      validateSDUIScreenResponse({
+        schemaVersion: '1.0',
+        status: 'redirect',
+        to: '/login',
+        query: 'bad',
+        state: 'bad',
+        replace: 'yes',
+      }).issues,
+    ).toEqual(
+      expect.arrayContaining([
+        { path: '$.query', message: 'query must be an object' },
+        { path: '$.state', message: 'state must be an object' },
+        { path: '$.replace', message: 'replace must be a boolean' },
+      ]),
+    )
+    expect(
+      validateSDUIScreenResponse({
+        schemaVersion: '1.0',
+        status: 'notFound',
+        message: 404,
+        node: { props: {} },
+      }).issues,
+    ).toEqual(
+      expect.arrayContaining([
+        { path: '$.message', message: 'message must be a string' },
+        {
+          path: '$.node.componentName',
+          message: 'componentName must be a non-empty string',
+        },
+      ]),
+    )
+    expect(
+      validateSDUIScreenResponse({
+        schemaVersion: '1.0',
+        node: { componentName: 'Text' },
+        data: [],
+        meta: [],
+        cache: {
+          key: 1,
+          ttlMs: '1000',
+          tags: 'Screen',
+        },
+      }).issues,
+    ).toEqual(
+      expect.arrayContaining([
+        { path: '$.data', message: 'data must be an object' },
+        { path: '$.meta', message: 'meta must be an object' },
+        { path: '$.cache.key', message: 'key must be a string' },
+        { path: '$.cache.ttlMs', message: 'ttlMs must be a number' },
+        { path: '$.cache.tags', message: 'tags must be an array' },
+      ]),
+    )
+  })
+
+  it('collects unknown components from UI-only action children', () => {
+    const node = {
+      componentName: 'Button',
+      props: {
+        action: {
+          type: 'UI_ONLY',
+          ui: {
+            type: 'openModal',
+            children: {
+              componentName: 'UnknownDialog',
+            },
+          },
+        },
+      },
+    }
+
+    expect(
+      collectUnknownComponents(node, (componentName) => componentName === 'Button'),
+    ).toEqual(['UnknownDialog'])
   })
 })
 
