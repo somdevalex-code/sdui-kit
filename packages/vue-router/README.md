@@ -2,12 +2,31 @@
 
 Vue Router navigation adapter for SDUI Kit.
 
+This package builds on [`@sdui-kit/core`](https://www.npmjs.com/package/@sdui-kit/core).
+
 ## Install
+
+**npm**
 
 ```bash
 npm install @sdui-kit/core @sdui-kit/vue @sdui-kit/vue-router vue-router
+```
+
+**pnpm**
+
+```bash
 pnpm add @sdui-kit/core @sdui-kit/vue @sdui-kit/vue-router vue-router
+```
+
+**yarn**
+
+```bash
 yarn add @sdui-kit/core @sdui-kit/vue @sdui-kit/vue-router vue-router
+```
+
+**bun**
+
+```bash
 bun add @sdui-kit/core @sdui-kit/vue @sdui-kit/vue-router vue-router
 ```
 

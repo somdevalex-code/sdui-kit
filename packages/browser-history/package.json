@@ -1,6 +1,6 @@
 {
   "name": "@sdui-kit/browser-history",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Browser history navigation adapter for SDUI Kit.",
   "license": "MIT",
   "repository": {

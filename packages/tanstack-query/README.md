@@ -2,12 +2,31 @@
 
 TanStack Query adapter helpers for SDUI Kit.
 
+This package builds on [`@sdui-kit/core`](https://www.npmjs.com/package/@sdui-kit/core).
+
 ## Install
+
+**npm**
 
 ```bash
 npm install @sdui-kit/core @sdui-kit/tanstack-query @tanstack/query-core
+```
+
+**pnpm**
+
+```bash
 pnpm add @sdui-kit/core @sdui-kit/tanstack-query @tanstack/query-core
+```
+
+**yarn**
+
+```bash
 yarn add @sdui-kit/core @sdui-kit/tanstack-query @tanstack/query-core
+```
+
+**bun**
+
+```bash
 bun add @sdui-kit/core @sdui-kit/tanstack-query @tanstack/query-core
 ```
 

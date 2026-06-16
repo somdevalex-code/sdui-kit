@@ -4,10 +4,27 @@ Framework-agnostic runtime for SDUI Kit.
 
 ## Install
 
+**npm**
+
 ```bash
 npm install @sdui-kit/core
+```
+
+**pnpm**
+
+```bash
 pnpm add @sdui-kit/core
+```
+
+**yarn**
+
+```bash
 yarn add @sdui-kit/core
+```
+
+**bun**
+
+```bash
 bun add @sdui-kit/core
 ```
 

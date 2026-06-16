@@ -1,6 +1,6 @@
 {
   "name": "@sdui-kit/forms",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Headless form runtime for SDUI Kit.",
   "license": "MIT",
   "repository": {

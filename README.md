@@ -17,10 +17,27 @@ This workspace contains these packages:
 
 Install the core runtime and one UI adapter:
 
+**npm**
+
 ```bash
 npm install @sdui-kit/core @sdui-kit/react
+```
+
+**pnpm**
+
+```bash
 pnpm add @sdui-kit/core @sdui-kit/react
+```
+
+**yarn**
+
+```bash
 yarn add @sdui-kit/core @sdui-kit/react
+```
+
+**bun**
+
+```bash
 bun add @sdui-kit/core @sdui-kit/react
 ```
 
