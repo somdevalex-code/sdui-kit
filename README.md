@@ -2,6 +2,10 @@
 
 Framework-agnostic Server-Driven UI runtime with adapters for UI frameworks.
 
+Documentation: https://somdevalex-code.github.io/sdui-kit/
+
+Live React demo: https://somdevalex-code.github.io/sdui-kit/react-basic/
+
 This workspace contains these packages:
 
 - `@sdui-kit/core` - protocol types, component registry, expressions, action runner and payload validation.
@@ -139,6 +143,11 @@ const registry = createReactRegistry({
 })
 ```
 
-See `docs/guide/getting-started.md` for the full walkthrough.
+See the full walkthrough in the
+[Getting Started guide](https://somdevalex-code.github.io/sdui-kit/guide/getting-started.html).
 
-Vue users can use the same core payloads through `@sdui-kit/vue`. See `docs/integrations/vue.md` and `docs/integrations/vue-router.md`.
+Vue users can use the same core payloads through `@sdui-kit/vue`. See the
+[Vue adapter](https://somdevalex-code.github.io/sdui-kit/integrations/vue.html)
+and
+[Vue Router](https://somdevalex-code.github.io/sdui-kit/integrations/vue-router.html)
+docs.

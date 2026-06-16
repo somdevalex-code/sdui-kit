@@ -4,6 +4,8 @@ SDUI Kit is a framework-agnostic runtime for Server-Driven UI.
 
 Use the core package to define the JSON protocol, actions and expressions. Choose a framework adapter to render the payload with your own components.
 
+Live demo: [React Basic](https://somdevalex-code.github.io/sdui-kit/react-basic/).
+
 ::: code-group
 
 ```bash [React]

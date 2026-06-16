@@ -32,4 +32,5 @@ bun add @sdui-kit/core @sdui-kit/browser-history
 
 Includes helpers for translating SDUI navigation actions to `window.history` and for creating route context from browser location data.
 
-See the repository README and `docs/integrations/browser-history.md` for full usage examples.
+See the full docs at
+https://somdevalex-code.github.io/sdui-kit/integrations/browser-history.html.

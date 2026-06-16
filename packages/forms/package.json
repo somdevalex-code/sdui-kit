@@ -1,6 +1,6 @@
 {
   "name": "@sdui-kit/forms",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Headless form runtime for SDUI Kit.",
   "license": "MIT",
   "repository": {
@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/somdevalex-code/sdui-kit/issues"
   },
-  "homepage": "https://github.com/somdevalex-code/sdui-kit/tree/main/packages/forms#readme",
+  "homepage": "https://somdevalex-code.github.io/sdui-kit/guide/forms.html",
   "keywords": ["sdui", "server-driven-ui", "forms", "typescript"],
   "type": "module",
   "sideEffects": false,

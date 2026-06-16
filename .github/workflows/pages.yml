@@ -1,0 +1,74 @@
+name: Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  GITHUB_PAGES: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build docs
+        run: pnpm --filter @sdui-kit/docs build
+
+      - name: Type-check React example
+        run: pnpm --filter @sdui-kit/react-basic typecheck
+
+      - name: Build React example
+        run: pnpm --filter @sdui-kit/react-basic build:pages
+
+      - name: Assemble Pages artifact
+        run: |
+          mkdir -p pages-artifact/react-basic
+          cp -R docs/.vitepress/dist/. pages-artifact/
+          cp -R examples/react-basic/dist/. pages-artifact/react-basic/
+          touch pages-artifact/.nojekyll
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: pages-artifact
+          include-hidden-files: true
+
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

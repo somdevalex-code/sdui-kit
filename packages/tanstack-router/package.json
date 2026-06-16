@@ -1,6 +1,6 @@
 {
   "name": "@sdui-kit/tanstack-router",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "TanStack Router route helpers for SDUI Kit.",
   "license": "MIT",
   "repository": {
@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/somdevalex-code/sdui-kit/issues"
   },
-  "homepage": "https://github.com/somdevalex-code/sdui-kit/tree/main/packages/tanstack-router#readme",
+  "homepage": "https://somdevalex-code.github.io/sdui-kit/integrations/tanstack-router.html",
   "keywords": ["sdui", "server-driven-ui", "tanstack-router", "typescript"],
   "type": "module",
   "sideEffects": false,

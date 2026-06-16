@@ -4,6 +4,8 @@ The reference app lives in `examples/react-basic`. It is a compact React app
 that keeps the SDUI wiring, fake backend, screen payloads, app-owned components,
 and form integration in separate files.
 
+Live demo: [React Basic](https://somdevalex-code.github.io/sdui-kit/react-basic/).
+
 Run it from the repository root:
 
 ```bash

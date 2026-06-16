@@ -1,6 +1,6 @@
 {
   "name": "@sdui-kit/next",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Next App Router navigation adapter for SDUI Kit.",
   "license": "MIT",
   "repository": {
@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/somdevalex-code/sdui-kit/issues"
   },
-  "homepage": "https://github.com/somdevalex-code/sdui-kit/tree/main/packages/next#readme",
+  "homepage": "https://somdevalex-code.github.io/sdui-kit/integrations/next.html",
   "keywords": ["sdui", "server-driven-ui", "nextjs", "typescript"],
   "type": "module",
   "sideEffects": false,

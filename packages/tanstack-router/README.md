@@ -34,4 +34,5 @@ Use the matching renderer package for your UI framework. The command above shows
 
 Includes helpers for creating SDUI route context and mapping SDUI route manifests to TanStack Router-like route options.
 
-See the repository README and `docs/integrations/tanstack-router.md` for full usage examples.
+See the full docs at
+https://somdevalex-code.github.io/sdui-kit/integrations/tanstack-router.html.

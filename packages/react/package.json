@@ -1,6 +1,6 @@
 {
   "name": "@sdui-kit/react",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "React adapter for SDUI Kit.",
   "license": "MIT",
   "repository": {
@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/somdevalex-code/sdui-kit/issues"
   },
-  "homepage": "https://github.com/somdevalex-code/sdui-kit/tree/main/packages/react#readme",
+  "homepage": "https://somdevalex-code.github.io/sdui-kit/integrations/react.html",
   "keywords": ["sdui", "server-driven-ui", "react", "typescript"],
   "type": "module",
   "sideEffects": false,

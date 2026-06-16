@@ -34,4 +34,8 @@ This package expects React to be installed by the host app.
 
 Includes React provider, renderer, registry helpers, action hooks, and screen rendering helpers for app-owned React components.
 
-See the repository README and `docs/integrations/react.md` for full usage examples.
+See the full docs at
+https://somdevalex-code.github.io/sdui-kit/integrations/react.html.
+
+Live demo:
+https://somdevalex-code.github.io/sdui-kit/react-basic/.

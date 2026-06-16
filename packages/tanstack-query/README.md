@@ -34,4 +34,5 @@ Install a renderer package separately, for example `@sdui-kit/react` or `@sdui-k
 
 Includes data, cache, and screen loader adapters that connect SDUI Kit to a TanStack Query-like client.
 
-See the repository README and `docs/integrations/tanstack-query.md` for full usage examples.
+See the full docs at
+https://somdevalex-code.github.io/sdui-kit/integrations/tanstack-query.html.

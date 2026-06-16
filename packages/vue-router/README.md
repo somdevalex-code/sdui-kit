@@ -32,4 +32,5 @@ bun add @sdui-kit/core @sdui-kit/vue @sdui-kit/vue-router vue-router
 
 Includes helpers for translating SDUI navigation actions to Vue Router navigation, creating route context, and mapping SDUI route manifests to route-like records.
 
-See the repository README and `docs/integrations/vue-router.md` for full usage examples.
+See the full docs at
+https://somdevalex-code.github.io/sdui-kit/integrations/vue-router.html.

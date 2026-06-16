@@ -34,4 +34,5 @@ This package expects Vue 3 to be installed by the host app.
 
 Includes Vue provider, renderer, registry helpers, action composables, and screen rendering helpers for app-owned Vue components.
 
-See the repository README and `docs/integrations/vue.md` for full usage examples.
+See the full docs at
+https://somdevalex-code.github.io/sdui-kit/integrations/vue.html.

@@ -42,4 +42,5 @@ Includes protocol types, component registry helpers, expression evaluation, acti
 - [`@sdui-kit/tanstack-query`](https://www.npmjs.com/package/@sdui-kit/tanstack-query) - TanStack Query data, cache, and screen loader helpers.
 - [`@sdui-kit/tanstack-router`](https://www.npmjs.com/package/@sdui-kit/tanstack-router) - TanStack Router route context and manifest helpers.
 
-See the repository README and `docs/` for full usage examples.
+See the full docs at
+https://somdevalex-code.github.io/sdui-kit/guide/getting-started.html.

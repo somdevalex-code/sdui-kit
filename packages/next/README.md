@@ -34,4 +34,5 @@ This package expects Next to be installed by the host app.
 
 Includes helpers for translating SDUI navigation actions to a Next-style router and for creating route context from pathname, params, and search params.
 
-See the repository README and `docs/integrations/next.md` for full usage examples.
+See the full docs at
+https://somdevalex-code.github.io/sdui-kit/integrations/next.html.

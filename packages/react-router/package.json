@@ -1,6 +1,6 @@
 {
   "name": "@sdui-kit/react-router",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "React Router navigation adapter for SDUI Kit.",
   "license": "MIT",
   "repository": {
@@ -11,7 +11,7 @@
   "bugs": {
     "url": "https://github.com/somdevalex-code/sdui-kit/issues"
   },
-  "homepage": "https://github.com/somdevalex-code/sdui-kit/tree/main/packages/react-router#readme",
+  "homepage": "https://somdevalex-code.github.io/sdui-kit/integrations/react-router.html",
   "keywords": ["sdui", "server-driven-ui", "react-router", "typescript"],
   "type": "module",
   "sideEffects": false,

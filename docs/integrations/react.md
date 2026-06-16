@@ -2,6 +2,8 @@
 
 Use `@sdui-kit/react` when a React app should render framework-neutral SDUI payloads with app-owned components.
 
+Live demo: [React Basic](https://somdevalex-code.github.io/sdui-kit/react-basic/).
+
 ## Install
 
 ```bash

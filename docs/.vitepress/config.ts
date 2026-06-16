@@ -1,9 +1,14 @@
 import { defineConfig } from 'vitepress'
 
+const isGitHubPages = process.env.GITHUB_PAGES === 'true'
+const docsBase = isGitHubPages ? '/sdui-kit/' : '/'
+const reactBasicDemoUrl = 'https://somdevalex-code.github.io/sdui-kit/react-basic/'
+
 export default defineConfig({
+  base: docsBase,
   title: 'SDUI Kit',
   description: 'Framework-agnostic Server-Driven UI runtime',
-  cleanUrls: true,
+  cleanUrls: !isGitHubPages,
   themeConfig: {
     search: {
       provider: 'local',
@@ -30,6 +35,7 @@ export default defineConfig({
       },
       { text: 'Recipes', link: '/recipes/layouts' },
       { text: 'Examples', link: '/examples/react-basic' },
+      { text: 'Live Demo', link: reactBasicDemoUrl },
     ],
     sidebar: [
       {

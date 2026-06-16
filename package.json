@@ -9,7 +9,7 @@
   "bugs": {
     "url": "https://github.com/somdevalex-code/sdui-kit/issues"
   },
-  "homepage": "https://github.com/somdevalex-code/sdui-kit#readme",
+  "homepage": "https://somdevalex-code.github.io/sdui-kit/",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@9.15.0",
