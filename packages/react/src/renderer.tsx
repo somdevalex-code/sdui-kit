@@ -63,6 +63,11 @@ export function SDUIRenderer({ node, context = {} }: SDUIRendererProps) {
         children: renderNode(childrenInput, currentContext),
       }
 
+      if (!registration) {
+        componentProps.componentName = current.componentName
+        componentProps.sduiNode = current
+      }
+
       if (rawProps.action && !componentProps.onClick) {
         componentProps.onClick = (event: unknown) =>
           runAction(rawProps.action as SDUIAction, { event })
