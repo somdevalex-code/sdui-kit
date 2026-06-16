@@ -2,8 +2,13 @@
 
 Browser history navigation adapter for SDUI Kit.
 
+## Install
+
 ```bash
+npm install @sdui-kit/core @sdui-kit/browser-history
 pnpm add @sdui-kit/core @sdui-kit/browser-history
+yarn add @sdui-kit/core @sdui-kit/browser-history
+bun add @sdui-kit/core @sdui-kit/browser-history
 ```
 
 Includes helpers for translating SDUI navigation actions to `window.history` and for creating route context from browser location data.

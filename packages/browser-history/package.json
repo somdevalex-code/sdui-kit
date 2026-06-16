@@ -3,6 +3,15 @@
   "version": "0.1.0",
   "description": "Browser history navigation adapter for SDUI Kit.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/somdevalex-code/sdui-kit.git",
+    "directory": "packages/browser-history"
+  },
+  "bugs": {
+    "url": "https://github.com/somdevalex-code/sdui-kit/issues"
+  },
+  "homepage": "https://github.com/somdevalex-code/sdui-kit/tree/main/packages/browser-history#readme",
   "keywords": ["sdui", "server-driven-ui", "browser-history", "typescript"],
   "type": "module",
   "sideEffects": false,

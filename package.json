@@ -2,6 +2,14 @@
   "name": "sdui-kit-workspace",
   "version": "0.1.0",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/somdevalex-code/sdui-kit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/somdevalex-code/sdui-kit/issues"
+  },
+  "homepage": "https://github.com/somdevalex-code/sdui-kit#readme",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@9.15.0",
@@ -11,6 +19,8 @@
     "test": "pnpm build && pnpm -r --filter './packages/**' test",
     "smoke:packages": "node scripts/smoke-packages.mjs",
     "release:check": "pnpm typecheck && pnpm test && pnpm --filter @sdui-kit/docs build && pnpm --filter @sdui-kit/react-basic typecheck && pnpm --filter @sdui-kit/react-basic build && pnpm smoke:packages",
+    "release:publish": "node scripts/publish-packages.mjs",
+    "release:publish:dry-run": "node scripts/publish-packages.mjs --dry-run",
     "docs:dev": "pnpm --filter @sdui-kit/docs dev",
     "example:react": "pnpm --filter @sdui-kit/react-basic dev"
   },

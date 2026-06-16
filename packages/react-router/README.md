@@ -2,8 +2,13 @@
 
 React Router navigation adapter for SDUI Kit.
 
+## Install
+
 ```bash
-pnpm add @sdui-kit/core @sdui-kit/react-router
+npm install @sdui-kit/core @sdui-kit/react @sdui-kit/react-router react-router-dom
+pnpm add @sdui-kit/core @sdui-kit/react @sdui-kit/react-router react-router-dom
+yarn add @sdui-kit/core @sdui-kit/react @sdui-kit/react-router react-router-dom
+bun add @sdui-kit/core @sdui-kit/react @sdui-kit/react-router react-router-dom
 ```
 
 Includes helpers for translating SDUI navigation actions to React Router navigation, creating route context, and mapping SDUI route manifests to route-like objects.

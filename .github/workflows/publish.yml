@@ -1,0 +1,62 @@
+name: Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run npm publish in dry-run mode"
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+          registry-url: https://registry.npmjs.org
+
+      - name: Install npm for trusted publishing
+        run: npm install -g npm@^11.5.1
+
+      - name: Show tool versions
+        run: |
+          node --version
+          npm --version
+          pnpm --version
+
+      - name: Configure npm token
+        if: ${{ env.NPM_TOKEN != '' }}
+        run: npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run release checks
+        run: pnpm release:check
+
+      - name: Publish dry run
+        if: ${{ inputs.dry_run }}
+        run: pnpm release:publish:dry-run
+
+      - name: Publish
+        if: ${{ !inputs.dry_run }}
+        run: pnpm release:publish

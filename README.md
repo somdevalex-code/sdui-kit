@@ -13,6 +13,20 @@ This workspace contains these packages:
 - `examples/react-basic` - a small React/Vite integration example.
 - `docs` - VitePress documentation site with protocol and recipe examples.
 
+## Install
+
+Install the core runtime and one UI adapter:
+
+```bash
+npm install @sdui-kit/core @sdui-kit/react
+pnpm add @sdui-kit/core @sdui-kit/react
+yarn add @sdui-kit/core @sdui-kit/react
+bun add @sdui-kit/core @sdui-kit/react
+```
+
+Use `@sdui-kit/vue` instead of `@sdui-kit/react` for Vue apps. Add router,
+query, or form packages only when the app needs those integrations.
+
 ## Local Development
 
 ```bash
