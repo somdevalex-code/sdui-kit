@@ -81,6 +81,22 @@ describe('@sdui-kit/forms', () => {
     )
   })
 
+  it('sets touched state explicitly', () => {
+    const store = createFormStore({
+      id: 'profile',
+      fields: [{ name: 'email' }],
+    })
+
+    store.setTouched('email')
+    expect(store.getState().touched).toEqual({ email: true })
+
+    store.setTouched('email', false)
+    expect(store.getState().touched).toEqual({ email: false })
+    expect(() => store.setTouched('missing')).toThrow(
+      'Unknown form field "missing"',
+    )
+  })
+
   it('validates fields and skips hidden fields', () => {
     const store = createFormStore({
       id: 'application',
@@ -110,6 +126,27 @@ describe('@sdui-kit/forms', () => {
     store.setValue('applicantType', 'company')
     expect(store.validate()).toBe(false)
     expect(store.getState().errors.companyName).toEqual(['Required'])
+  })
+
+  it('skips validation for invisible fields when validating directly', () => {
+    const store = createFormStore({
+      id: 'application',
+      initialValues: { applicantType: 'person' },
+      fields: [
+        { name: 'applicantType' },
+        {
+          name: 'companyName',
+          visibleWhen: { eq: [{ var: 'form.values.applicantType' }, 'company'] },
+          validation: { required: true },
+        },
+      ],
+    })
+
+    expect(store.validateField('companyName')).toEqual([])
+    expect(store.getState()).toMatchObject({
+      errors: {},
+      isValid: true,
+    })
   })
 
   it('validates on change and reports field state expressions', () => {
@@ -224,6 +261,54 @@ describe('@sdui-kit/forms', () => {
     expect(store.getState().errors).toEqual({
       code: ['Code is too long'],
       quantity: ['Too small', 'Must be less than or equal to 10'],
+    })
+  })
+
+  it('uses default messages for min, max, and oneOf validation failures', () => {
+    const store = createFormStore({
+      id: 'limits',
+      initialValues: {
+        minOnly: 0,
+        maxOnly: 11,
+        status: 'archived',
+      },
+      fields: [
+        { name: 'minOnly', validation: { min: 1 } },
+        { name: 'maxOnly', validation: { max: 10 } },
+        { name: 'status', validation: { oneOf: ['draft', 'active'] } },
+      ],
+    })
+
+    expect(store.validate()).toBe(false)
+    expect(store.getState().errors).toEqual({
+      minOnly: ['Must be greater than or equal to 1'],
+      maxOnly: ['Must be less than or equal to 10'],
+      status: ['Invalid value'],
+    })
+  })
+
+  it('compacts cleared field errors after validate-on-change updates', () => {
+    const store = createFormStore({
+      id: 'profile',
+      validateOnChange: true,
+      fields: [
+        {
+          name: 'name',
+          validation: { minLength: 3 },
+        },
+      ],
+    })
+
+    store.setValue('name', 'Ad')
+    expect(store.getState()).toMatchObject({
+      errors: { name: ['Must be at least 3 characters'] },
+      isValid: false,
+    })
+
+    store.setValue('name', 'Ada')
+    expect(store.getState()).toMatchObject({
+      errors: {},
+      isValid: true,
     })
   })
 

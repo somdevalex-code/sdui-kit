@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { createNextNavigationAdapter, createNextRouteContext } from '../src'
+import {
+  createNextNavigationAdapter,
+  createNextRouteContext,
+  withQuery,
+} from '../src'
 
 describe('@sdui-kit/next', () => {
   it('delegates push, replace, and back to a Next-like router', () => {
@@ -45,6 +49,16 @@ describe('@sdui-kit/next', () => {
     )
   })
 
+  it('builds query strings while skipping empty and nullish values', () => {
+    expect(withQuery('/applications', {})).toBe('/applications')
+    expect(
+      withQuery('/applications?tab=summary#details', {
+        tab: null,
+        page: 2,
+      }),
+    ).toBe('/applications?tab=summary&page=2#details')
+  })
+
   it('builds route context from App Router pathname and params', () => {
     expect(
       createNextRouteContext({
@@ -70,6 +84,43 @@ describe('@sdui-kit/next', () => {
     ).toEqual({
       tag: 'b',
       page: '2',
+    })
+  })
+
+  it('compacts empty pathname, params, search params, and state', () => {
+    expect(
+      createNextRouteContext({
+        pathname: '',
+        params: { slug: undefined },
+        searchParams: undefined,
+        state: 'not-an-object',
+      }),
+    ).toEqual({ path: '/' })
+  })
+
+  it('skips null and empty record search values', () => {
+    expect(
+      createNextRouteContext({
+        pathname: '/applications',
+        searchParams: {
+          tag: [],
+          page: null,
+          status: 'active',
+        },
+      }).query,
+    ).toEqual({ status: 'active' })
+  })
+
+  it('compacts empty URLSearchParams and preserves object state', () => {
+    expect(
+      createNextRouteContext({
+        pathname: '/applications',
+        searchParams: new URLSearchParams(),
+        state: { from: 'dashboard' },
+      }),
+    ).toEqual({
+      path: '/applications',
+      state: { from: 'dashboard' },
     })
   })
 })

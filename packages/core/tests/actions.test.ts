@@ -2,6 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
   ActionRunner,
+  assertValidSDUINode,
+  assertValidSDUIRouteManifest,
+  assertValidSDUIScreenResponse,
   collectUnknownComponents,
   ComponentRegistry,
   createRequestAdapter,
@@ -9,6 +12,10 @@ import {
   createScreenStore,
   evaluateCondition,
   getPath,
+  isInvalidationTag,
+  isRenderableScreenResponse,
+  isSDUINode,
+  normalizeInvalidationTags,
   resolveExpression,
   resolveValue,
   type SDUIScreenResponse,
@@ -117,21 +124,54 @@ describe('@sdui-kit/core', () => {
       items: [{ count: 2 }, { count: 5 }],
       title: 'Server driven UI',
       emptyObject: {},
+      profile: null,
     }
 
     expect(getPath(context, '')).toBe(context)
     expect(getPath(context, 'items[1].count')).toBe(5)
     expect(getPath(context, 'items.0.count')).toBe(2)
+    expect(getPath(context, 'profile.name')).toBeUndefined()
     expect(getPath('text', 'length')).toBeUndefined()
     expect(resolveExpression({ gt: [{ var: 'items[1].count' }, 4] }, context)).toBe(true)
     expect(resolveExpression({ lt: [{ var: 'items[0].count' }, 1] }, context)).toBe(false)
     expect(resolveExpression({ lte: ['not-number', 1] }, context)).toBe(false)
     expect(resolveExpression({ neq: [{ var: 'items[0].count' }, 5] }, context)).toBe(true)
+    expect(resolveExpression({ not: { var: 'missing' } }, context)).toBe(true)
     expect(resolveExpression({ or: [false, { includes: [{ var: 'title' }, 'driven'] }] }, context)).toBe(true)
     expect(resolveExpression({ includes: [{ var: 'items' }, { count: 2 }] }, context)).toBe(false)
+    expect(resolveExpression({ includes: [123, '2'] }, context)).toBe(false)
+    expect(resolveExpression({ includes: [{ count: 2 }, 2] }, context)).toBe(false)
+    expect(resolveExpression({ empty: null }, context)).toBe(true)
+    expect(resolveExpression({ empty: 0 }, context)).toBe(false)
     expect(resolveExpression({ empty: { var: 'emptyObject' } }, context)).toBe(true)
     expect(resolveExpression({ notEmpty: { var: 'items' } }, context)).toBe(true)
     expect(evaluateCondition(undefined, context, false)).toBe(false)
+  })
+
+  it('normalizes invalidation tags and rejects malformed tags', () => {
+    expect(normalizeInvalidationTags(null)).toEqual([])
+    expect(normalizeInvalidationTags(undefined)).toEqual([])
+    expect(normalizeInvalidationTags({ type: 'Application', id: 1 })).toEqual([
+      { type: 'Application', id: 1 },
+    ])
+    expect(normalizeInvalidationTags({ type: '' })).toEqual([])
+    expect(
+      normalizeInvalidationTags([
+        'Applications',
+        '',
+        { type: 'Application', id: 1 },
+        { type: '' },
+        { id: 1 },
+        42,
+      ]),
+    ).toEqual(['Applications', { type: 'Application', id: 1 }])
+
+    expect(isInvalidationTag('Applications')).toBe(true)
+    expect(isInvalidationTag('')).toBe(false)
+    expect(isInvalidationTag({ type: 'Application' })).toBe(true)
+    expect(isInvalidationTag({ type: '' })).toBe(false)
+    expect(isInvalidationTag({ id: 1 })).toBe(false)
+    expect(isInvalidationTag(null)).toBe(false)
   })
 
   it('runs request actions with resolved payload and success action', async () => {
@@ -422,6 +462,114 @@ describe('@sdui-kit/core', () => {
     )
   })
 
+  it('stops notifying screen store listeners after unsubscribe', async () => {
+    const listener = vi.fn()
+    const store = createScreenStore({
+      route: { path: '/applications' },
+      loader: async () => ({
+        schemaVersion: '1.0',
+        node: { componentName: 'Text' },
+      }),
+    })
+
+    const unsubscribe = store.subscribe(listener)
+    unsubscribe()
+    await store.load()
+
+    expect(listener).toHaveBeenCalledTimes(1)
+    expect(listener).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'idle' }),
+    )
+  })
+
+  it('writes screen responses to cache and exposes refreshing state', async () => {
+    const listener = vi.fn()
+    const cache = {
+      get: vi.fn(),
+      set: vi.fn(),
+      invalidate: vi.fn(),
+    }
+    const store = createScreenStore({
+      route: { path: '/applications' },
+      cache,
+      loader: async () => ({
+        schemaVersion: '1.0',
+        node: { componentName: 'Text' },
+        cache: {
+          key: 'screen:/applications',
+          ttlMs: 1000,
+          tags: ['Applications'],
+        },
+      }),
+    })
+
+    await store.load()
+    store.subscribe(listener)
+    listener.mockClear()
+
+    const refresh = store.refresh()
+
+    expect(listener).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'refreshing' }),
+    )
+    await refresh
+    expect(cache.set).toHaveBeenCalledWith(
+      'screen:/applications',
+      expect.objectContaining({ schemaVersion: '1.0' }),
+      { ttlMs: 1000, tags: ['Applications'] },
+    )
+  })
+
+  it('does not let stale screen loads overwrite state after cache writes', async () => {
+    const cacheWrite = deferred<void>()
+    const cache = {
+      get: vi.fn(),
+      set: vi.fn((key: string) => {
+        return key === 'screen:/slow' ? cacheWrite.promise : undefined
+      }),
+      invalidate: vi.fn(),
+    }
+    const store = createScreenStore({
+      route: { path: '/initial' },
+      cache,
+      loader: async ({ route }) => ({
+        schemaVersion: '1.0',
+        node: {
+          componentName: 'Text',
+          props: { children: route.path },
+        },
+        cache: { key: `screen:${route.path}` },
+      }),
+    })
+
+    const slowLoad = store.load({ path: '/slow' })
+    await Promise.resolve()
+    expect(cache.set).toHaveBeenCalledWith(
+      'screen:/slow',
+      expect.objectContaining({
+        node: expect.objectContaining({
+          props: { children: '/slow' },
+        }),
+      }),
+      expect.any(Object),
+    )
+
+    await expect(store.load({ path: '/fast' })).resolves.toMatchObject({
+      status: 'success',
+      route: { path: '/fast' },
+    })
+
+    cacheWrite.resolve()
+    await expect(slowLoad).resolves.toMatchObject({
+      status: 'success',
+      route: { path: '/fast' },
+    })
+    expect(store.getState().response?.node).toEqual({
+      componentName: 'Text',
+      props: { children: '/fast' },
+    })
+  })
+
   it('passes screen id, route params, query, and state to screen loaders', async () => {
     const loader = vi.fn(async () => ({
       schemaVersion: '1.0',
@@ -555,6 +703,74 @@ describe('@sdui-kit/core', () => {
       path: '$.componentName',
       message: 'componentName must be a non-empty string',
     })
+  })
+
+  it('identifies SDUI nodes at runtime', () => {
+    expect(isSDUINode({ componentName: 'Text' })).toBe(true)
+    expect(isSDUINode({ componentName: '' })).toBe(true)
+    expect(isSDUINode({ props: {} })).toBe(false)
+    expect(isSDUINode(null)).toBe(false)
+    expect(isSDUINode([{ componentName: 'Text' }])).toBe(false)
+  })
+
+  it('asserts valid nodes, screen responses, and route manifests', () => {
+    expect(() =>
+      assertValidSDUINode({ componentName: 'Text' }),
+    ).not.toThrow()
+    expect(() => assertValidSDUINode({ props: {} })).toThrow(
+      'Invalid SDUI node: $.componentName: componentName must be a non-empty string',
+    )
+
+    expect(() =>
+      assertValidSDUIScreenResponse({
+        schemaVersion: '1.0',
+        node: { componentName: 'Text' },
+      }),
+    ).not.toThrow()
+    expect(() =>
+      assertValidSDUIScreenResponse({ schemaVersion: '1.0' }),
+    ).toThrow('Invalid SDUI screen response: $.node: node is required for render responses')
+
+    expect(() =>
+      assertValidSDUIRouteManifest({
+        schemaVersion: '1.0',
+        routes: [{ id: 'home', path: '/' }],
+      }),
+    ).not.toThrow()
+    expect(() =>
+      assertValidSDUIRouteManifest({ schemaVersion: '', routes: [] }),
+    ).toThrow(
+      'Invalid SDUI route manifest: $.schemaVersion: schemaVersion must be a non-empty string',
+    )
+  })
+
+  it('detects renderable screen responses', () => {
+    expect(
+      isRenderableScreenResponse({
+        schemaVersion: '1.0',
+        node: { componentName: 'Text' },
+      }),
+    ).toBe(true)
+    expect(
+      isRenderableScreenResponse({
+        schemaVersion: '1.0',
+        status: 'notFound',
+        node: { componentName: 'Missing' },
+      }),
+    ).toBe(true)
+    expect(
+      isRenderableScreenResponse({
+        schemaVersion: '1.0',
+        status: 'redirect',
+        to: '/login',
+      }),
+    ).toBe(false)
+    expect(
+      isRenderableScreenResponse({
+        schemaVersion: '1.0',
+        status: 'notFound',
+      }),
+    ).toBe(false)
   })
 
   it('validates and collects nested SDUI nodes in arbitrary props', () => {
