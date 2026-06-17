@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   createBrowserHistoryNavigationAdapter,
   createBrowserHistoryRouteContext,
+  withQuery,
 } from '../src'
 
 describe('@sdui-kit/browser-history', () => {
@@ -60,5 +61,61 @@ describe('@sdui-kit/browser-history', () => {
       query: { tab: 'summary' },
       state: { from: 'list' },
     })
+  })
+
+  it('requires browser history when no history object is provided', () => {
+    const adapter = createBrowserHistoryNavigationAdapter()
+
+    expect(() => adapter.goBack({})).toThrow(
+      'Browser history adapter requires a history object',
+    )
+  })
+
+  it('skips empty and nullish query values', () => {
+    expect(withQuery('/applications', {})).toBe('/applications')
+    expect(
+      withQuery('/applications?tab=summary#details', {
+        tab: null,
+        page: 2,
+        empty: undefined,
+      }),
+    ).toBe('/applications?tab=summary&page=2#details')
+  })
+
+  it('uses location fallback and compacts empty route context values', () => {
+    expect(
+      createBrowserHistoryRouteContext({
+        location: { pathname: '', search: '' },
+        state: 'not-an-object',
+      }),
+    ).toEqual({ path: '/' })
+
+    expect(
+      createBrowserHistoryRouteContext({
+        location: { pathname: '/applications', search: '?' },
+        state: null,
+      }),
+    ).toEqual({ path: '/applications' })
+  })
+
+  it('reads browser location and normalizes browser history state', () => {
+    vi.stubGlobal('window', {
+      location: {
+        href: 'https://app.example.test/applications?tab=summary',
+        origin: 'https://app.example.test',
+      },
+      history: {
+        state: ['not', 'an', 'object'],
+      },
+    })
+
+    try {
+      expect(createBrowserHistoryRouteContext()).toEqual({
+        path: '/applications',
+        query: { tab: 'summary' },
+      })
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })

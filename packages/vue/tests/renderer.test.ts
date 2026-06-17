@@ -1,17 +1,85 @@
-import { createSSRApp, defineComponent, h } from 'vue'
+import {
+  createRenderer,
+  createSSRApp,
+  defineComponent,
+  h,
+  nextTick,
+  provide,
+} from 'vue'
 import { renderToString } from '@vue/server-renderer'
 import { describe, expect, it, vi } from 'vitest'
 import { ActionRunner, type ScreenStoreAdapter } from '@sdui-kit/core'
 
 import {
   SDUIProvider,
+  SDUIContextKey,
   SDUIRenderer,
+  SDUIScreenContextKey,
   SDUIScreenProvider,
   SDUIScreenRenderer,
   createVueRegistry,
+  useSDUIAction,
+  useSDUIScreenStore,
 } from '../src'
 
 describe('@sdui-kit/vue', () => {
+  it('subscribes on mount, loads idle screens, renders empty fallback, and unsubscribes', async () => {
+    let state: ReturnType<ScreenStoreAdapter['getState']> = {
+      status: 'idle',
+      route: { path: '/idle' },
+    }
+    let listener: ((nextState: typeof state) => void) | undefined
+    const unsubscribe = vi.fn()
+    const store: ScreenStoreAdapter = {
+      getState: () => state,
+      subscribe: vi.fn((nextListener) => {
+        listener = nextListener
+        return unsubscribe
+      }),
+      load: vi.fn(async () => {
+        state = {
+          status: 'success',
+          route: { path: '/idle' },
+          response: {
+            schemaVersion: '1.0',
+            status: 'redirect',
+            to: '/login',
+          },
+        }
+        listener?.(state)
+        return state
+      }),
+      refresh: vi.fn(),
+      setRoute: vi.fn(),
+    }
+    const registry = createVueRegistry({})
+    const actionRunner = new ActionRunner()
+    const Harness = defineComponent({
+      setup() {
+        provide(SDUIScreenContextKey, store)
+        provide(SDUIContextKey, { registry, actionRunner })
+
+        return () =>
+          h(SDUIScreenRenderer, {
+            loadingFallback: 'Loading...',
+            emptyFallback: 'Empty screen',
+          })
+      },
+    })
+    const { app, root } = mountVue(() => h(Harness))
+
+    await Promise.resolve()
+    await nextTick()
+
+    expect(store.subscribe).toHaveBeenCalled()
+    expect(store.load).toHaveBeenCalled()
+    expect(hostText(root)).toContain('Empty screen')
+
+    app.unmount()
+
+    expect(unsubscribe).toHaveBeenCalled()
+  })
+
   it('supports JavaScript shorthand component maps', async () => {
     const Text = defineComponent({
       setup(_props, { slots }) {
@@ -242,6 +310,137 @@ describe('@sdui-kit/vue', () => {
     expect(receivedProps.renderNode).toEqual(expect.any(Function))
   })
 
+  it('renders SDUI nodes nested inside props, arrays, and plain objects', async () => {
+    const registry = createVueRegistry({
+      Text: defineComponent({
+        setup(_props, { slots }) {
+          return () => h('span', null, slots.default?.())
+        },
+      }),
+      Panel: defineComponent({
+        inheritAttrs: false,
+        setup(_props, { attrs }) {
+          return () =>
+            h('section', null, [
+              attrs.header,
+              ...(attrs.items as unknown[]),
+              (attrs.footer as { action?: unknown }).action,
+              (attrs.footer as { label?: string }).label,
+            ])
+        },
+      }),
+    })
+
+    const html = await renderVue(
+      h(
+        SDUIProvider,
+        { registry, actionRunner: new ActionRunner() },
+        {
+          default: () =>
+            h(SDUIRenderer, {
+              node: {
+                componentName: 'Panel',
+                props: {
+                  header: {
+                    componentName: 'Text',
+                    props: { children: 'Header' },
+                  },
+                  items: [
+                    {
+                      componentName: 'Text',
+                      props: { children: 'First' },
+                    },
+                    {
+                      componentName: 'Text',
+                      props: { children: 'Second' },
+                    },
+                  ],
+                  footer: {
+                    action: {
+                      componentName: 'Text',
+                      props: { children: 'Open' },
+                    },
+                    label: 'plain label',
+                  },
+                },
+              },
+            }),
+        },
+      ),
+    )
+
+    expect(html).toContain('Header')
+    expect(html).toContain('First')
+    expect(html).toContain('Second')
+    expect(html).toContain('Open')
+    expect(html).toContain('plain label')
+  })
+
+  it('renders nodes through the injected renderNode helper', async () => {
+    const RuntimeWidget = defineComponent({
+      inheritAttrs: false,
+      setup(_props, { attrs }) {
+        return () =>
+          h('div', null, [
+            (attrs.renderNode as (node: unknown) => unknown)({
+              componentName: 'Text',
+              props: { children: 'Rendered child' },
+            }),
+          ])
+      },
+    })
+    const registry = createVueRegistry({
+      RuntimeWidget: {
+        component: RuntimeWidget,
+        metadata: { injectRuntime: true },
+      },
+      Text: defineComponent({
+        setup(_props, { slots }) {
+          return () => h('span', null, slots.default?.())
+        },
+      }),
+    })
+
+    const html = await renderVue(
+      h(
+        SDUIProvider,
+        { registry, actionRunner: new ActionRunner() },
+        {
+          default: () =>
+            h(SDUIRenderer, {
+              node: { componentName: 'RuntimeWidget' },
+            }),
+        },
+      ),
+    )
+
+    expect(html).toContain('<span>Rendered child</span>')
+  })
+
+  it('renders registered string components', async () => {
+    const registry = createVueRegistry({
+      Button: 'button',
+    })
+
+    const html = await renderVue(
+      h(
+        SDUIProvider,
+        { registry, actionRunner: new ActionRunner() },
+        {
+          default: () =>
+            h(SDUIRenderer, {
+              node: {
+                componentName: 'Button',
+                props: { children: 'Save' },
+              },
+            }),
+        },
+      ),
+    )
+
+    expect(html).toContain('<button>Save</button>')
+  })
+
   it('renders loaded screens through the screen renderer', async () => {
     const registry = createVueRegistry({
       Text: defineComponent({
@@ -376,6 +575,67 @@ describe('@sdui-kit/vue', () => {
       expect.any(ActionRunner),
     )
   })
+
+  it('runs actions through useSDUIAction and errors outside the provider', async () => {
+    let runAction!: ReturnType<typeof useSDUIAction>
+    const inspect = vi.fn()
+    const HookConsumer = defineComponent({
+      setup() {
+        runAction = useSDUIAction()
+        return () => h('div', null, 'Ready')
+      },
+    })
+
+    await renderVue(
+      h(
+        SDUIProvider,
+        {
+          registry: createVueRegistry({}),
+          actionRunner: new ActionRunner({ custom: { inspect } }),
+        },
+        {
+          default: () => h(HookConsumer),
+        },
+      ),
+    )
+
+    await runAction({ type: 'inspect' }, { data: { id: 1 } })
+
+    expect(inspect).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'inspect' }),
+      expect.objectContaining({ data: { id: 1 } }),
+      expect.any(ActionRunner),
+    )
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+    try {
+      await expect(renderVue(h(HookConsumer))).rejects.toThrow(
+        'useSDUI must be used inside SDUIProvider',
+      )
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  it('errors when the screen store hook is used outside the screen provider', async () => {
+    const HookConsumer = defineComponent({
+      setup() {
+        useSDUIScreenStore()
+        return () => h('div', null, 'Ready')
+      },
+    })
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+    try {
+      await expect(renderVue(h(HookConsumer))).rejects.toThrow(
+        'useSDUIScreenStore must be used inside SDUIScreenProvider',
+      )
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
 })
 
 function renderVue(node: unknown): Promise<string> {
@@ -399,4 +659,102 @@ function createStaticScreenStore(
     refresh: async () => state,
     setRoute: async () => state,
   }
+}
+
+interface HostNode {
+  type: string
+  text?: string
+  props?: Record<string, unknown>
+  parent?: HostNode
+  children: HostNode[]
+}
+
+function createTestRenderer() {
+  return createRenderer<HostNode, HostNode>({
+    patchProp(element, key, _previousValue, nextValue) {
+      element.props = element.props ?? {}
+
+      if (nextValue === undefined || nextValue === null) {
+        delete element.props[key]
+        return
+      }
+
+      element.props[key] = nextValue
+    },
+    insert(child, parent, anchor) {
+      child.parent = parent
+      const index = anchor ? parent.children.indexOf(anchor) : -1
+
+      if (index >= 0) {
+        parent.children.splice(index, 0, child)
+        return
+      }
+
+      parent.children.push(child)
+    },
+    remove(child) {
+      const parent = child.parent
+
+      if (!parent) {
+        return
+      }
+
+      const index = parent.children.indexOf(child)
+
+      if (index >= 0) {
+        parent.children.splice(index, 1)
+      }
+    },
+    createElement(type) {
+      return { type, children: [] }
+    },
+    createText(text) {
+      return { type: '#text', text, children: [] }
+    },
+    createComment(text) {
+      return { type: '#comment', text, children: [] }
+    },
+    setText(node, text) {
+      node.text = text
+    },
+    setElementText(node, text) {
+      node.text = text
+      node.children = []
+    },
+    parentNode(node) {
+      return node.parent ?? null
+    },
+    nextSibling(node) {
+      const parent = node.parent
+
+      if (!parent) {
+        return null
+      }
+
+      const index = parent.children.indexOf(node)
+      return parent.children[index + 1] ?? null
+    },
+  })
+}
+
+const testRenderer = createTestRenderer()
+
+function mountVue(
+  render: () => unknown,
+): {
+  app: ReturnType<typeof testRenderer.createApp>
+  root: HostNode
+} {
+  const root: HostNode = { type: 'root', children: [] }
+  const app = testRenderer.createApp({ render })
+
+  app.mount(root)
+
+  return { app, root }
+}
+
+function hostText(node: HostNode): string {
+  return [node.text, ...node.children.map(hostText)]
+    .filter((value): value is string => typeof value === 'string')
+    .join('')
 }

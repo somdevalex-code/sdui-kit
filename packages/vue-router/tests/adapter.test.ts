@@ -144,6 +144,29 @@ describe('@sdui-kit/vue-router', () => {
     })
   })
 
+  it('falls back to fullPath and compacts empty route context values', () => {
+    expect(
+      createVueRouterRouteContext({
+        route: {
+          fullPath: '/from-full-path?tab=summary#details',
+          params: {
+            id: null,
+            rest: [null],
+          },
+          query: {
+            empty: [null],
+            skipped: undefined,
+          },
+          state: 'not-an-object',
+        },
+      }),
+    ).toEqual({
+      path: '/from-full-path',
+    })
+
+    expect(createVueRouterRouteContext({ route: {} })).toEqual({ path: '/' })
+  })
+
   it('creates catch-all route records', () => {
     expect(
       createVueRouterCatchAllRoute({
@@ -214,6 +237,51 @@ describe('@sdui-kit/vue-router', () => {
             },
           },
         ],
+      },
+    ])
+  })
+
+  it('uses manifest route factory overrides', () => {
+    const beforeEnter = vi.fn()
+    const routes = createVueRouterRoutesFromManifest(
+      {
+        schemaVersion: '1.0',
+        routes: [
+          {
+            id: 'applications.details',
+            path: '/applications/:id',
+            screenId: 'applications.details',
+            metadata: { auth: true },
+          },
+        ],
+      },
+      {
+        component: 'DefaultBoundary',
+        components: { default: 'DefaultBoundary' },
+        redirect: '/default',
+        beforeEnter: 'defaultGuard',
+        componentForRoute: (route) => `Component:${route.id}`,
+        componentsForRoute: (route) => ({ sidebar: `Sidebar:${route.id}` }),
+        redirectForRoute: (route) => `/redirected/${route.id}`,
+        beforeEnterForRoute: () => beforeEnter,
+        meta: (route) => ({ requiresAuth: route.metadata?.auth === true }),
+      },
+    )
+
+    expect(routes).toEqual([
+      {
+        path: '/applications/:id',
+        name: 'applications.details',
+        component: 'Component:applications.details',
+        components: { sidebar: 'Sidebar:applications.details' },
+        redirect: '/redirected/applications.details',
+        beforeEnter,
+        meta: expect.objectContaining({
+          routeId: 'applications.details',
+          screenId: 'applications.details',
+          metadata: { auth: true },
+          requiresAuth: true,
+        }),
       },
     ])
   })
