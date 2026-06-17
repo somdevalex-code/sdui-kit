@@ -13,6 +13,13 @@ describe('@sdui-kit/react-router', () => {
     expect(withQuery('/applications', { status: 'active', page: 2 })).toBe(
       '/applications?status=active&page=2',
     )
+    expect(withQuery('/applications', {})).toBe('/applications')
+    expect(
+      withQuery('/applications?tab=summary#details', {
+        tab: null,
+        page: 2,
+      }),
+    ).toBe('/applications?tab=summary&page=2#details')
   })
 
   it('delegates navigate and goBack', () => {
@@ -55,6 +62,19 @@ describe('@sdui-kit/react-router', () => {
       query: { tab: 'summary' },
       state: { from: 'list' },
     })
+  })
+
+  it('compacts empty route context params, search, and state', () => {
+    expect(
+      createReactRouterRouteContext({
+        location: {
+          pathname: '',
+          search: '',
+          state: ['not', 'an', 'object'],
+        },
+        params: { id: undefined },
+      }),
+    ).toEqual({ path: '/' })
   })
 
   it('creates catch-all and manifest route objects without router imports', () => {
@@ -121,6 +141,57 @@ describe('@sdui-kit/react-router', () => {
     ).toEqual([
       expect.objectContaining({
         element: 'screen:applications.details',
+      }),
+    ])
+  })
+
+  it('creates nested manifest routes and custom handles', () => {
+    const routes = createReactRouterRoutesFromManifest(
+      {
+        schemaVersion: '1.0',
+        routes: [
+          {
+            id: 'applications',
+            path: '/applications',
+            screenId: 'applications.list',
+            children: [
+              {
+                id: 'applications.details',
+                path: ':id',
+                screenId: 'applications.details',
+                metadata: { permission: 'applications.read' },
+              },
+            ],
+          },
+        ],
+      },
+      {
+        element: 'screen-boundary',
+        handle: (route) => ({ customRouteId: route.id }),
+      },
+    )
+
+    expect(routes).toEqual([
+      expect.objectContaining({
+        id: 'applications',
+        element: 'screen-boundary',
+        handle: expect.objectContaining({
+          routeId: 'applications',
+          customRouteId: 'applications',
+        }),
+        children: [
+          expect.objectContaining({
+            id: 'applications.details',
+            path: ':id',
+            element: 'screen-boundary',
+            handle: expect.objectContaining({
+              routeId: 'applications.details',
+              screenId: 'applications.details',
+              metadata: { permission: 'applications.read' },
+              customRouteId: 'applications.details',
+            }),
+          }),
+        ],
       }),
     ])
   })

@@ -10,6 +10,7 @@ import {
   SDUIScreenRenderer,
   createReactRegistry,
   useSDUIAction,
+  useSDUIScreenStore,
 } from '../src'
 
 describe('@sdui-kit/react', () => {
@@ -281,6 +282,66 @@ describe('@sdui-kit/react', () => {
     expect(html).toContain('<article><span>Nested accessory</span></article>')
   })
 
+  it('renders SDUI nodes nested inside arrays and object props', () => {
+    const registry = createReactRegistry({
+      Text: ({ children }) => React.createElement('span', null, children),
+      Gallery: ({
+        header,
+        items,
+        footer,
+      }: {
+        header?: React.ReactNode
+        items?: React.ReactNode
+        footer?: { action?: React.ReactNode; label?: string }
+      }) =>
+        React.createElement(
+          'section',
+          null,
+          header,
+          items,
+          React.createElement('aside', null, footer?.action, footer?.label),
+        ),
+    })
+
+    const html = renderToStaticMarkup(
+      <SDUIProvider registry={registry} actionRunner={new ActionRunner()}>
+        <SDUIRenderer
+          node={{
+            componentName: 'Gallery',
+            props: {
+              header: {
+                componentName: 'Text',
+                props: { children: 'Header' },
+              },
+              items: [
+                {
+                  componentName: 'Text',
+                  props: { children: 'First' },
+                },
+                {
+                  componentName: 'Text',
+                  props: { children: 'Second' },
+                },
+              ],
+              footer: {
+                action: {
+                  componentName: 'Text',
+                  props: { children: 'Open' },
+                },
+                label: 'plain label',
+              },
+            },
+          }}
+        />
+      </SDUIProvider>,
+    )
+
+    expect(html).toContain('Header')
+    expect(html).toContain('First')
+    expect(html).toContain('Second')
+    expect(html).toContain('<aside><span>Open</span>plain label</aside>')
+  })
+
   it('runs actions through useSDUIAction and errors outside the provider', async () => {
     let runAction!: ReturnType<typeof useSDUIAction>
     const inspect = vi.fn()
@@ -307,6 +368,17 @@ describe('@sdui-kit/react', () => {
     )
     expect(() => renderToStaticMarkup(<HookConsumer />)).toThrow(
       'useSDUI must be used inside SDUIProvider',
+    )
+  })
+
+  it('errors when the screen store hook is used outside the screen provider', () => {
+    const HookConsumer = () => {
+      useSDUIScreenStore()
+      return React.createElement('div', null, 'Ready')
+    }
+
+    expect(() => renderToStaticMarkup(<HookConsumer />)).toThrow(
+      'useSDUIScreenStore must be used inside SDUIScreenProvider',
     )
   })
 
@@ -418,6 +490,85 @@ describe('@sdui-kit/react', () => {
     expect(loading).not.toContain('Empty')
     expect(error).toContain('Failed /missing')
     expect(error).not.toContain('Empty')
+  })
+
+  it('renders the empty fallback for successful non-renderable responses', () => {
+    const html = renderToStaticMarkup(
+      <SDUIScreenProvider
+        registry={createReactRegistry({})}
+        actionRunner={new ActionRunner()}
+        screenStore={createStaticScreenStore({
+          status: 'success',
+          route: { path: '/redirected' },
+          response: {
+            schemaVersion: '1.0',
+            status: 'redirect',
+            to: '/login',
+          },
+        })}
+      >
+        <SDUIScreenRenderer emptyFallback="Nothing to render" />
+      </SDUIScreenProvider>,
+    )
+
+    expect(html).toContain('Nothing to render')
+  })
+
+  it('loads idle screens after the mount effect runs', async () => {
+    const load = vi.fn(async () => ({
+      status: 'success' as const,
+      route: { path: '/idle' },
+    }))
+    const store: ScreenStoreAdapter = {
+      getState: () => ({
+        status: 'idle',
+        route: { path: '/idle' },
+      }),
+      subscribe: vi.fn(() => () => undefined),
+      load,
+      refresh: vi.fn(),
+      setRoute: vi.fn(),
+    }
+
+    vi.resetModules()
+    vi.doMock('react', async () => {
+      const actual = await vi.importActual<typeof import('react')>('react')
+
+      return {
+        ...actual,
+        default: actual,
+        useEffect: (effect: () => void) => {
+          effect()
+        },
+      }
+    })
+
+    try {
+      const {
+        SDUIScreenProvider: EffectScreenProvider,
+        SDUIScreenRenderer: EffectScreenRenderer,
+        createReactRegistry: createEffectRegistry,
+      } = await import('../src')
+
+      renderToStaticMarkup(
+        React.createElement(
+          EffectScreenProvider,
+          {
+            registry: createEffectRegistry({}),
+            actionRunner: new ActionRunner(),
+            screenStore: store,
+          },
+          React.createElement(EffectScreenRenderer, {
+            loadingFallback: 'Loading',
+          }),
+        ),
+      )
+    } finally {
+      vi.doUnmock('react')
+      vi.resetModules()
+    }
+
+    expect(load).toHaveBeenCalledTimes(1)
   })
 
   it('passes screen route and data into action context', async () => {

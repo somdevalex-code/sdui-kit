@@ -26,6 +26,35 @@ describe('@sdui-kit/tanstack-router', () => {
     })
   })
 
+  it('normalizes empty route context values and forEach search params', () => {
+    expect(
+      createTanStackRouteContext({
+        pathname: '',
+        params: { id: undefined },
+        search: { tag: [], skipped: null },
+        state: ['not', 'an', 'object'],
+      }),
+    ).toEqual({ path: '/' })
+
+    expect(
+      createTanStackRouteContext({
+        pathname: '/applications',
+        search: new URLSearchParams('tab=summary'),
+      }).query,
+    ).toEqual({ tab: 'summary' })
+
+    expect(
+      createTanStackRouteContext({
+        pathname: '/applications',
+        search: {
+          forEach(callback) {
+            callback('2', 'page')
+          },
+        },
+      }).query,
+    ).toEqual({ page: '2' })
+  })
+
   it('creates catch-all route options and manifest route options', () => {
     expect(
       createTanStackCatchAllRouteOptions({
@@ -97,10 +126,67 @@ describe('@sdui-kit/tanstack-router', () => {
     ])
   })
 
+  it('creates nested manifest routes with static data and beforeLoad factories', () => {
+    const beforeLoad = () => ({ ok: true })
+    const routes = createTanStackRoutesFromManifest(
+      {
+        schemaVersion: '1.0',
+        routes: [
+          {
+            id: 'applications',
+            path: '/applications',
+            screenId: 'applications.list',
+            children: [
+              {
+                id: 'applications.details',
+                path: ':id',
+                screenId: 'applications.details',
+                metadata: { permission: 'applications.read' },
+              },
+            ],
+          },
+        ],
+      },
+      {
+        componentForRoute: (route) => `component:${route.id}`,
+        beforeLoadForRoute: () => beforeLoad,
+        staticData: (route) => ({ customRouteId: route.id }),
+      },
+    )
+
+    expect(routes).toEqual([
+      expect.objectContaining({
+        path: '/applications',
+        component: 'component:applications',
+        beforeLoad,
+        staticData: expect.objectContaining({
+          routeId: 'applications',
+          customRouteId: 'applications',
+        }),
+        children: [
+          expect.objectContaining({
+            path: '$id',
+            component: 'component:applications.details',
+            beforeLoad,
+            staticData: expect.objectContaining({
+              routeId: 'applications.details',
+              screenId: 'applications.details',
+              metadata: { permission: 'applications.read' },
+              customRouteId: 'applications.details',
+            }),
+          }),
+        ],
+      }),
+    ])
+  })
+
   it('converts neutral route params to TanStack route params', () => {
     expect(toTanStackRoutePath('/applications/:id/documents/:documentId')).toBe(
       '/applications/$id/documents/$documentId',
     )
     expect(toTanStackRoutePath('/users/:id?')).toBe('/users/{-$id}')
+    expect(toTanStackRoutePath('/:locale?/docs/:id')).toBe(
+      '/{-$locale}/docs/$id',
+    )
   })
 })
